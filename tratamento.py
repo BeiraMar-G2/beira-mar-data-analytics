@@ -3,11 +3,11 @@ import glob
 import os
 
 
-input_path = r"C:\Users\gisel\OneDrive\Documentos\beira-mar-data-analytics\03. Dataset - Meteorologia\raw"
-output_path = r"C:\Users\gisel\OneDrive\Documentos\beira-mar-data-analytics\03. Dataset - Meteorologia\trusted\meteorologia_tratada_2024.csv"
+input_path = r"c:\Users\demor\Documents\beira-mar-data-analytics\03. Dataset - Meteorologia\raw"
+output_path = r"c:\Users\demor\Documents\beira-mar-data-analytics\03. Dataset - Meteorologia\trusted\meteorologia_tratada_2016.csv"
 
 
-all_files = glob.glob(os.path.join(input_path, "*.csv"))
+all_files = glob.glob(os.path.join(input_path, "meteorologia2016.csv"))
 
 dfs = []
 for file in all_files:
