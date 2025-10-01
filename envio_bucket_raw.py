@@ -1,9 +1,6 @@
 import boto3
 import os
 
-# ====================== #
-#        Config          #
-# ====================== #
 
 regiao = 'us-east-1'
 nome_bucket_raw = 'raw-beira-mar'
@@ -16,9 +13,6 @@ pastas_para_enviar = {
     "/03. Dataset - Meteorologia/raw/": "Clima/",
 }
 
-# ====================== #
-#      Functions         #
-# ====================== #
 
 def subir_arquivo(bucket_name, file_path_local, file_path_s3):
     """
@@ -34,11 +28,8 @@ def subir_arquivo(bucket_name, file_path_local, file_path_s3):
     except Exception as e:
         print(f"Erro ao enviar o arquivo '{file_path_local}': {e}")
 
-# ====================== #
-#        Main            #
-# ====================== #
 
-
+    
 for pasta_local, pasta_s3 in pastas_para_enviar.items():
         if not os.path.isdir(pasta_local):
             print(f"Aviso: Diretório local '{pasta_local}' não encontrado. Pulando...")

@@ -1,130 +1,20 @@
-# %%
 import pandas as pd
-import unicodedata
 import glob
 import os
 
 
-# %% [markdown]
-# ### Sumário de padrões para tratamento de dados:
-# 
-# - Data: DD/MM/YYYY
-# 
-# - Data hora: DD/MM/YYYY HH:MM:SS
-# 
-# - Binário: 0 ou 1
-# 
-# - Strings e colunas: Maiusculas e sem acento: 
-# 
-# - Espaços: Manter apenas um espaço no intervalo entre palavras
-# 
-# - Sexo: M e F
-# 
-# - Delimitador: Vírgula
-# 
-# - Armazenamento: Todos os arquivos em .csv
-# 
-
-# %% [markdown]
-# ### Funções para padronização:
-
-# %%
-# Formato em 2016-04-29T18:38:08Z
-def padronizar_data_hora(df, coluna):
-
-  df[coluna] = pd.to_datetime(df[coluna])
-  
-  df[coluna] = df[coluna].dt.strftime('%d/%m/%Y %H:%M:%S')
-  
-  return df
+input_path = r"c:\Users\demor\Documents\beira-mar-data-analytics\03. Dataset - Meteorologia\raw"
+output_path = r"c:\Users\demor\Documents\beira-mar-data-analytics\03. Dataset - Meteorologia\trusted\meteorologia_tratada_2016.csv"
 
 
-# %%
-#Formato em MM/DD/AA
-def padronizar_data(df, coluna):
+all_files = glob.glob(os.path.join(input_path, "meteorologia2016.csv"))
 
-  df[coluna] = pd.to_datetime(df[coluna], format='%m/%d/%Y')
-  
-  df[coluna] = df[coluna].dt.strftime('%d/%m/%Y')
-  
-  return df
+dfs = []
+for file in all_files:
+    df_temp = pd.read_csv(file, encoding="latin1", sep=";", skiprows=8)
+    dfs.append(df_temp)
 
-# %%
-def padronizar_colunas(df):
-
-    df.columns = df.columns.str.upper()
-    
-    return df
-
-# %%
-def converter_para_binario(df, coluna):
-    mapeamento = {'Yes': 1, 'No': 0}
-    df[coluna].replace(mapeamento, inplace=True)
-    return df
-
-# %%
-def remover_acentos(df):
-    for coluna in df.columns:
-        if df[coluna].dtype == 'object':
-            df[coluna] = df[coluna].astype(str).str.normalize('NFKD').str.encode('ascii', errors='ignore').str.decode('utf-8')
-    return df
-
-
-# %%
-def padronizar_maiusculo(df):
-    for coluna in df.columns:
-        if df[coluna].dtype == 'object':
-            df[coluna] = df[coluna].astype(str).str.upper()
-    return df
-
-# %%
-df_med.head()
-
-# %%
-df_HairSalon.head()
-
-# %% [markdown]
-# ### Tratamento de dados
-
-# %%
-df_med_raw = pd.read_csv("01. Dataset - Medical Appointment No Shows/raw/medical_appointments.csv")
-
-
-# %%
-df_med = df_med_raw
-
-# %%
-df_med = padronizar_data_hora(df_med, 'ScheduledDay')
-df_med = padronizar_data_hora(df_med, 'AppointmentDay')
-df_med = padronizar_colunas(df_med)
-df_med = converter_para_binario(df_med, 'NO-SHOW')
-df_med = remover_acentos(df_med)
-df_med = padronizar_maiusculo(df_med)
-
-# %%
-df_med_trusted = df_med
-df_med_trusted.to_csv('01. Dataset - Medical Appointment No Shows/trusted/medical_appointment_no_show.csv')
-
-# %%
-df_HairSalon_row = pd.read_csv("02. Dataset - Hair Salon No-Show/raw/Client Cancellations0.csv")
-df_HairSalon = df_HairSalon_row
-
-# %%
-df_HairSalon = padronizar_data(df_HairSalon,'Cancel Date' )
-df_HairSalon = padronizar_data(df_HairSalon,'Booking Date' )
-df_HairSalon = padronizar_colunas(df_HairSalon)
-df_HairSalon = padronizar_maiusculo(df_HairSalon)
-df_HairSalon = remover_acentos(df_HairSalon)
-
-# %%
-df_HairSalon_trusted = df_HairSalon
-df_med_trusted.to_csv('02. Dataset - Hair Salon No-Show/trusted/hair_salon_client_cancel.csv')
-
-# %%
-
-df = pd.read_csv('03. Dataset - Meteorologia/raw/meteorologia2016.csv', ignore_index=True)
-
-# %%
+df = pd.concat(dfs, ignore_index=True)
 
 
 df.columns = [
@@ -264,6 +154,3 @@ df_diario["DATA"] = df_diario["DATA"].dt.strftime("%d/%m/%Y")
 df_diario.to_csv(output_path, index=False, encoding="utf-8-sig")
 
 print(f"Base de meteorologia tratada!")
-
-
-
