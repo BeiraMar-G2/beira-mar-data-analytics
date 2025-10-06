@@ -8,9 +8,7 @@ nome_bucket_raw = 'raw-beira-mar'
 client = boto3.client('s3', region_name=regiao)
 
 pastas_para_enviar = {
-    "/01. Dataset - Medical Appointment No Shows/raw/": "ClinicaMed/",
-    "/02. Dataset - Hair Salon No-Show/raw/": "Salao/",
-    "/03. Dataset - Meteorologia/raw/": "Clima/",
+    "dados/raw/"
 }
 
 
@@ -29,7 +27,7 @@ def subir_arquivo(bucket_name, file_path_local, file_path_s3):
         print(f"Erro ao enviar o arquivo '{file_path_local}': {e}")
 
 
-    
+
 for pasta_local, pasta_s3 in pastas_para_enviar.items():
         if not os.path.isdir(pasta_local):
             print(f"Aviso: Diretório local '{pasta_local}' não encontrado. Pulando...")
