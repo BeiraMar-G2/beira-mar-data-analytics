@@ -4,6 +4,10 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.92"
     }
+    archive = {
+      source  = "hashicorp/archive"
+      version = "~> 2.4"
+    }
   }
   required_version = ">= 1.2"
 }
@@ -12,16 +16,12 @@ provider "aws" {
   region = "us-east-1"
 }
 
+# ---------------------------------------------------------
+# --- RECURSOS S3 (Buckets e Pastas) ---
+# ---------------------------------------------------------
+
 resource "aws_s3_bucket" "raw" {
   bucket = "raw-beira-mar"
-}
-
-resource "aws_s3_object" "raw_pastas" {
-  count  = length(var.raw_folders)
-  bucket = aws_s3_bucket.raw.id
-  key    = "${var.raw_folders[count.index]}/"
-  source = "empty_file" 
-  etag   = filemd5("empty_file")
 }
 
 resource "aws_s3_bucket" "trusted" {
@@ -29,11 +29,11 @@ resource "aws_s3_bucket" "trusted" {
 }
 
 resource "aws_s3_object" "trusted_pastas" {
-  count  = length(var.trusted_folders)
-  bucket = aws_s3_bucket.trusted.id
-  key    = "${var.trusted_folders[count.index]}/"
-  source = "empty_file"
-  etag   = filemd5("empty_file")
+  count   = length(var.trusted_folders)
+  bucket  = aws_s3_bucket.trusted.id
+  key     = "${var.trusted_folders[count.index]}/"
+  content = ""
+  etag    = md5("") 
 }
 
 resource "aws_s3_bucket" "refined" {
@@ -41,165 +41,136 @@ resource "aws_s3_bucket" "refined" {
 }
 
 resource "aws_s3_object" "refined_pastas" {
-  count  = length(var.refined_folders)
-  bucket = aws_s3_bucket.refined.id
-  key    = "${var.refined_folders[count.index]}/"
-  source = "empty_file"
-  etag   = filemd5("empty_file")
+  count   = length(var.refined_folders)
+  bucket  = aws_s3_bucket.refined.id
+  key     = "${var.refined_folders[count.index]}/"
+  content = ""
+  etag    = md5("")
 }
 
-variable "raw_folders" {
-  description = "Lista de pastas a serem criadas no bucket raw."
-  type        = list(string)
-  default     = ["ClinicaMed", "Salao", "Clima"]
+# Bucket para armazenar a Lambda Layer
+resource "aws_s3_bucket" "lambda_artifacts" {
+  bucket = "lambda-artifacts-beira-mar-${random_string.suffix.result}"
 }
+
+resource "random_string" "suffix" {
+  length  = 8
+  special = false
+  upper   = false
+}
+
+# ---------------------------------------------------------
+# --- VARIÁVEIS ---
+# ---------------------------------------------------------
 
 variable "trusted_folders" {
-  description = "Lista de pastas a serem criadas no bucket trusted."
+  description = "Lista de pastas a serem criadas no bucket trusted"
   type        = list(string)
-  default     = ["ClinicaMed", "Salao", "Clima"]
+  default     = ["clima", "clinica"]
 }
 
 variable "refined_folders" {
-  description = "Lista de pastas a serem criadas no bucket refined."
+  description = "Lista de pastas a serem criadas no bucket refined"
   type        = list(string)
-  default     = ["ClinicaMed", "Salao", "Clima", "imagens"]
+  default     = ["clinica_com_clima"]
 }
 
-variable "lambda_function_trusted" {
-  description = "lambda_function_trusted"
-  type        = string
-  default     = "s3-data-processor-beira-mar"
+# ---------------------------------------------------------
+# --- LAMBDA LAYER CUSTOMIZADA (via S3) ---
+# ---------------------------------------------------------
+
+# Upload da Layer para S3
+resource "aws_s3_object" "pandas_layer_zip" {
+  bucket = aws_s3_bucket.lambda_artifacts.id
+  key    = "layers/pandas-s3fs-layer.zip"
+  source = "lambda_layer.zip"
+  etag   = filemd5("lambda_layer.zip")
 }
 
-resource "aws_iam_role" "lambda_role" {
-  name = "${var.lambda_function_trusted}-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
-        Principal = {
-          Service = "lambda.amazonaws.com"
-        }
-      }
-    ]
-  })
-
-  tags = {
-    Name    = "Lambda Execution Role"
-    Project = "Beira Mar"
-  }
-}
-
-resource "aws_iam_role_policy_attachment" "lambda_logs" {
-  role       = aws_iam_role.lambda_role.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
-}
-
-resource "aws_iam_role_policy" "lambda_s3_policy" {
-  name = "${var.lambda_function_trusted}-s3-policy"
-  role = aws_iam_role.lambda_role.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "s3:GetObject",
-          "s3:ListBucket"
-        ]
-        Resource = [
-          aws_s3_bucket.raw.arn,
-          "${aws_s3_bucket.raw.arn}/*"
-        ]
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "s3:PutObject",
-          "s3:PutObjectAcl"
-        ]
-        Resource = [
-          "${aws_s3_bucket.trusted.arn}/*"
-        ]
-      }
-    ]
-  })
-}
-
+# Criar Layer apontando para S3
 resource "aws_lambda_layer_version" "pandas_layer" {
-  filename            = "pandas_layer.zip"
-  layer_name          = "pandas-numpy-layer-beira-mar"
-  compatible_runtimes = ["python3.11", "python3.10", "python3.9"]
-  description = "Layer com Pandas, NumPy e dependências"
+  layer_name          = "pandas-s3fs-custom-layer"
+  s3_bucket           = aws_s3_bucket.lambda_artifacts.id
+  s3_key              = aws_s3_object.pandas_layer_zip.key
+  compatible_runtimes = ["python3.9"]
+  description         = "Layer customizada com pandas, s3fs e boto3"
+  
+  depends_on = [aws_s3_object.pandas_layer_zip]
+}
+
+# ---------------------------------------------------------
+# --- LAMBDA FUNCTION ---
+# ---------------------------------------------------------
+
+data "aws_iam_role" "lab_role" {
+  name = "LabRole"
 }
 
 data "archive_file" "lambda_zip" {
   type        = "zip"
-  source_file = "${path.module}/lambda_function_trusted.py"
-  output_path = "${path.module}/lambda_function_trusted.zip"
+  source_file = "02tratamento_lambda.py"
+  output_path = "02tratamento_lambda.zip"
 }
 
-resource "aws_lambda_function" "data_processor" {
+resource "aws_lambda_function" "tratamento_lambda" {
+  depends_on = [
+    data.aws_iam_role.lab_role,
+    data.archive_file.lambda_zip,
+    aws_lambda_layer_version.pandas_layer
+  ]
+  
+  function_name    = "LambdaTratamentoBeiraMar"
+  handler          = "02tratamento_lambda.lambda_handler"
+  role             = data.aws_iam_role.lab_role.arn
+  
   filename         = data.archive_file.lambda_zip.output_path
-  function_name    = var.lambda_function_trusted
-  role            = aws_iam_role.lambda_role.arn
-  handler         = "lambda_function.lambda_handler"
   source_code_hash = data.archive_file.lambda_zip.output_base64sha256
-  runtime         = "python3.11"
-  timeout         = 300
-  memory_size     = 512
-
+  
+  runtime          = "python3.9"
+  timeout          = 300
+  memory_size      = 512
+  
+  # Anexar a Layer customizada
   layers = [aws_lambda_layer_version.pandas_layer.arn]
-
+  
   environment {
     variables = {
       BUCKET_RAW     = aws_s3_bucket.raw.id
       BUCKET_TRUSTED = aws_s3_bucket.trusted.id
     }
   }
-
-  tags = {
-    Name    = "S3 Data Processor"
-    Project = "Beira Mar"
-  }
 }
 
-resource "aws_cloudwatch_log_group" "lambda_logs" {
-  name              = "/aws/lambda/${var.lambda_function_trusted}"
-  retention_in_days = 7
-
-  tags = {
-    Name    = "Lambda Logs"
-    Project = "Beira Mar"
-  }
-}
+# ---------------------------------------------------------
+# --- OUTPUTS ---
+# ---------------------------------------------------------
 
 output "lambda_function_arn" {
   description = "ARN da função Lambda"
-  value       = aws_lambda_function.data_processor.arn
+  value       = aws_lambda_function.tratamento_lambda.arn
 }
 
 output "lambda_function_name" {
   description = "Nome da função Lambda"
-  value       = aws_lambda_function.data_processor.function_name
+  value       = aws_lambda_function.tratamento_lambda.function_name
+}
+
+output "layer_arn" {
+  description = "ARN da Lambda Layer customizada"
+  value       = aws_lambda_layer_version.pandas_layer.arn
 }
 
 output "bucket_raw_name" {
-  description = "Nome do bucket raw"
+  description = "Nome do bucket RAW"
   value       = aws_s3_bucket.raw.id
 }
 
 output "bucket_trusted_name" {
-  description = "Nome do bucket trusted"
+  description = "Nome do bucket TRUSTED"
   value       = aws_s3_bucket.trusted.id
 }
 
 output "bucket_refined_name" {
-  description = "Nome do bucket refined"
+  description = "Nome do bucket REFINED"
   value       = aws_s3_bucket.refined.id
 }

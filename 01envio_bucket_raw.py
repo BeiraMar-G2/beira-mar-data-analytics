@@ -7,18 +7,13 @@ nome_bucket_raw = 'raw-beira-mar'
 
 client = boto3.client('s3', region_name=regiao)
 
+# Mapeamento: {caminho_local: prefixo_s3}
 pastas_para_enviar = {
-    "dados/raw/"
+    "dados/raw/": "" 
+    # Adicione mais pastas aqui no formato: "pasta_local/": "prefixo_s3/"
 }
-
-
 def subir_arquivo(bucket_name, file_path_local, file_path_s3):
-    """
-    Sobe um arquivo para um bucket S3.
-    :param bucket_name: Nome do bucket de destino.
-    :param file_path_local: Caminho completo do arquivo local.
-    :param file_path_s3: Caminho e nome do arquivo no S3 (ex: 'pasta/nome_arquivo.csv').
-    """
+
     try:
         print(f"Enviando '{file_path_local}' para S3 em '{file_path_s3}'...")
         client.upload_file(file_path_local, bucket_name, file_path_s3)

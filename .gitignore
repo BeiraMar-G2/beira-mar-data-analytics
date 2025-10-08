@@ -1,5 +1,8 @@
 .env
 terraform/*
 !terraform/main.tf
+!terraform/02tratamento_lambda.py
+!terraform/criar_lambda_layer.py
+!terraform/inspect_layer.py
 terraform.tfstate
 .terraform.lock.hcl 
