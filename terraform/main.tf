@@ -48,17 +48,6 @@ resource "aws_s3_object" "refined_pastas" {
   etag    = md5("")
 }
 
-# Bucket para armazenar a Lambda Layer
-resource "aws_s3_bucket" "lambda_artifacts" {
-  bucket = "lambda-artifacts-beira-mar-${random_string.suffix.result}"
-}
-
-resource "random_string" "suffix" {
-  length  = 8
-  special = false
-  upper   = false
-}
-
 # ---------------------------------------------------------
 # --- VARIÁVEIS ---
 # ---------------------------------------------------------
@@ -76,37 +65,18 @@ variable "refined_folders" {
 }
 
 # ---------------------------------------------------------
-# --- LAMBDA LAYER CUSTOMIZADA (via S3) ---
-# ---------------------------------------------------------
-
-# Upload da Layer para S3
-resource "aws_s3_object" "pandas_layer_zip" {
-  bucket = aws_s3_bucket.lambda_artifacts.id
-  key    = "layers/pandas-s3fs-layer.zip"
-  source = "lambda_layer.zip"
-  etag   = filemd5("lambda_layer.zip")
-}
-
-# Criar Layer apontando para S3
-resource "aws_lambda_layer_version" "pandas_layer" {
-  layer_name          = "pandas-s3fs-custom-layer"
-  s3_bucket           = aws_s3_bucket.lambda_artifacts.id
-  s3_key              = aws_s3_object.pandas_layer_zip.key
-  compatible_runtimes = ["python3.9"]
-  description         = "Layer customizada com pandas, s3fs e boto3"
-  
-  depends_on = [aws_s3_object.pandas_layer_zip]
-}
-
-# ---------------------------------------------------------
-# --- LAMBDA FUNCTION ---
+# --- IAM ROLE ---
 # ---------------------------------------------------------
 
 data "aws_iam_role" "lab_role" {
   name = "LabRole"
 }
 
-data "archive_file" "lambda_zip" {
+# ---------------------------------------------------------
+# --- LAMBDA 1: RAW -> TRUSTED ---
+# ---------------------------------------------------------
+
+data "archive_file" "lambda_tratamento_zip" {
   type        = "zip"
   source_file = "02tratamento_lambda.py"
   output_path = "02tratamento_lambda.zip"
@@ -115,23 +85,21 @@ data "archive_file" "lambda_zip" {
 resource "aws_lambda_function" "tratamento_lambda" {
   depends_on = [
     data.aws_iam_role.lab_role,
-    data.archive_file.lambda_zip,
-    aws_lambda_layer_version.pandas_layer
+    data.archive_file.lambda_tratamento_zip
   ]
   
   function_name    = "LambdaTratamentoBeiraMar"
   handler          = "02tratamento_lambda.lambda_handler"
   role             = data.aws_iam_role.lab_role.arn
   
-  filename         = data.archive_file.lambda_zip.output_path
-  source_code_hash = data.archive_file.lambda_zip.output_base64sha256
+  filename         = data.archive_file.lambda_tratamento_zip.output_path
+  source_code_hash = data.archive_file.lambda_tratamento_zip.output_base64sha256
   
-  runtime          = "python3.9"
+  runtime          = "python3.12"
   timeout          = 300
   memory_size      = 512
   
-  # Anexar a Layer customizada
-  layers = [aws_lambda_layer_version.pandas_layer.arn]
+  layers = ["arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python312:19"]
   
   environment {
     variables = {
@@ -142,22 +110,64 @@ resource "aws_lambda_function" "tratamento_lambda" {
 }
 
 # ---------------------------------------------------------
+# --- LAMBDA 2: TRUSTED -> REFINED ---
+# ---------------------------------------------------------
+
+data "archive_file" "lambda_refined_zip" {
+  type        = "zip"
+  source_file = "03refined_lambda.py"
+  output_path = "03refined_lambda.zip"
+}
+
+resource "aws_lambda_function" "refined_lambda" {
+  depends_on = [
+    data.aws_iam_role.lab_role,
+    data.archive_file.lambda_refined_zip
+  ]
+  
+  function_name    = "LambdaRefinedBeiraMar"
+  handler          = "03refined_lambda.lambda_handler"
+  role             = data.aws_iam_role.lab_role.arn
+  
+  filename         = data.archive_file.lambda_refined_zip.output_path
+  source_code_hash = data.archive_file.lambda_refined_zip.output_base64sha256
+  
+  runtime          = "python3.12"
+  timeout          = 600  # 10 minutos (merge pode demorar)
+  memory_size      = 1024 # Mais memória para o merge
+  
+  layers = ["arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python312:19"]
+  
+  environment {
+    variables = {
+      BUCKET_TRUSTED = aws_s3_bucket.trusted.id
+      BUCKET_REFINED = aws_s3_bucket.refined.id
+    }
+  }
+}
+
+# ---------------------------------------------------------
 # --- OUTPUTS ---
 # ---------------------------------------------------------
 
-output "lambda_function_arn" {
-  description = "ARN da função Lambda"
+output "lambda_tratamento_arn" {
+  description = "ARN da Lambda de Tratamento (RAW -> TRUSTED)"
   value       = aws_lambda_function.tratamento_lambda.arn
 }
 
-output "lambda_function_name" {
-  description = "Nome da função Lambda"
+output "lambda_tratamento_name" {
+  description = "Nome da Lambda de Tratamento"
   value       = aws_lambda_function.tratamento_lambda.function_name
 }
 
-output "layer_arn" {
-  description = "ARN da Lambda Layer customizada"
-  value       = aws_lambda_layer_version.pandas_layer.arn
+output "lambda_refined_arn" {
+  description = "ARN da Lambda Refined (TRUSTED -> REFINED)"
+  value       = aws_lambda_function.refined_lambda.arn
+}
+
+output "lambda_refined_name" {
+  description = "Nome da Lambda Refined"
+  value       = aws_lambda_function.refined_lambda.function_name
 }
 
 output "bucket_raw_name" {
@@ -173,4 +183,37 @@ output "bucket_trusted_name" {
 output "bucket_refined_name" {
   description = "Nome do bucket REFINED"
   value       = aws_s3_bucket.refined.id
+}
+
+output "workflow_completo" {
+  description = "Como executar o workflow completo"
+  value = <<-EOT
+    
+    ✅ Infraestrutura criada com sucesso!
+    
+    📋 WORKFLOW COMPLETO - Pipeline ETL:
+    
+    1️⃣  Use seu script para enviar CSVs ao bucket RAW
+    
+    2️⃣  Execute a Lambda de Tratamento (RAW -> TRUSTED):
+        aws lambda invoke --function-name LambdaTratamentoBeiraMar --payload '{}' response1.json
+        cat response1.json
+    
+    3️⃣  Execute a Lambda Refined (TRUSTED -> REFINED):
+        aws lambda invoke --function-name LambdaRefinedBeiraMar --payload '{}' response2.json
+        cat response2.json
+    
+    4️⃣  Verifique o resultado final:
+        aws s3 ls s3://refined-beira-mar/clinica_com_clima/
+    
+    📊 Ver logs:
+        aws logs tail /aws/lambda/LambdaTratamentoBeiraMar --follow
+        aws logs tail /aws/lambda/LambdaRefinedBeiraMar --follow
+    
+    🔄 Pipeline completo em um comando:
+        aws lambda invoke --function-name LambdaTratamentoBeiraMar --payload '{}' response1.json && \
+        aws lambda invoke --function-name LambdaRefinedBeiraMar --payload '{}' response2.json && \
+        echo "✅ Pipeline concluído!"
+    
+  EOT
 }

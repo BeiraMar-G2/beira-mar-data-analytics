@@ -2,15 +2,14 @@ import boto3
 import os
 
 
+
 regiao = 'us-east-1'
 nome_bucket_raw = 'raw-beira-mar'
 
 client = boto3.client('s3', region_name=regiao)
 
-# Mapeamento: {caminho_local: prefixo_s3}
 pastas_para_enviar = {
     "dados/raw/": "" 
-    # Adicione mais pastas aqui no formato: "pasta_local/": "prefixo_s3/"
 }
 def subir_arquivo(bucket_name, file_path_local, file_path_s3):
 

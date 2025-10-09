@@ -2,7 +2,9 @@
 terraform/*
 !terraform/main.tf
 !terraform/02tratamento_lambda.py
-!terraform/criar_lambda_layer.py
-!terraform/inspect_layer.py
+!terraform/03refined_lambda.py
+!terraform/00guia.markdown
+!terraform/01run_pipeline.sh
+!terraform/empty_file
 terraform.tfstate
 .terraform.lock.hcl 

@@ -1,1 +1,18 @@
 Justificativa modelo estrela: https://claude.ai/chat/381ce81a-a022-4999-adac-86d81b05284b
+
+Camada: 
+Camadas  Informações
+Editar
+Adicionar uma camada
+Ordem de mesclagem
+Nome
+Versão da camada
+Tempos de execução compatíveis
+Arquiteturas compatíveis
+ARN da versão
+1
+AWSSDKPandas-Python312
+19
+python3.12
+x86_64
+arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python312:19

@@ -1,23 +1,45 @@
 import pandas as pd
-import unicodedata
-import os
-import io
 import boto3
+import io
+import os
 
-# Nota: s3fs não é necessário importar explicitamente
-# O pandas usa automatamente quando encontra URLs s3://
-
-# Variáveis de ambiente (configuradas no Terraform)
-BUCKET_RAW = os.environ.get('BUCKET_RAW', 'raw-beira-mar')
-BUCKET_TRUSTED = os.environ.get('BUCKET_TRUSTED', 'trusted-beira-mar')
+# Configuração direta dos buckets
+BUCKET_RAW = 'raw-beira-mar'
+BUCKET_TRUSTED = 'trusted-beira-mar'
 
 CHAVE_MED = "medical_appointments.csv"
 CHAVE_CLIMA = "meteorologia2016.csv"
 
+# Cliente S3
+s3_client = boto3.client('s3')
+
+
+def ler_csv_do_s3(bucket, key, **kwargs):
+    """Lê arquivo CSV do S3 usando boto3"""
+    try:
+        obj = s3_client.get_object(Bucket=bucket, Key=key)
+        return pd.read_csv(io.BytesIO(obj['Body'].read()), **kwargs)
+    except Exception as e:
+        raise Exception(f"Erro ao ler {key} do bucket {bucket}: {str(e)}")
+
+
+def salvar_csv_no_s3(df, bucket, key):
+    """Salva DataFrame como CSV no S3"""
+    try:
+        csv_buffer = io.StringIO()
+        df.to_csv(csv_buffer, index=False)
+        s3_client.put_object(
+            Bucket=bucket,
+            Key=key,
+            Body=csv_buffer.getvalue()
+        )
+    except Exception as e:
+        raise Exception(f"Erro ao salvar {key} no bucket {bucket}: {str(e)}")
+
 
 def padronizar_data_hora(df, coluna):
     """Padroniza colunas de data e hora para formato brasileiro"""
-    df[coluna] = pd.   (df[coluna])
+    df[coluna] = pd.to_datetime(df[coluna])
     df[coluna] = df[coluna].dt.strftime('%d/%m/%Y %H:%M:%S')
     return df
 
@@ -100,20 +122,24 @@ def lambda_handler(event, context):
     print("🚀 Iniciando processamento ETL")
     print("=" * 60)
     
-    # 1. Definir caminhos S3
-    path_med_raw = f"s3://{BUCKET_RAW}/{CHAVE_MED}"
-    path_clima_raw = f"s3://{BUCKET_RAW}/{CHAVE_CLIMA}"
+    # Usar variáveis de ambiente do Terraform ou valores padrão
+    bucket_raw = os.environ.get('BUCKET_RAW', BUCKET_RAW)
+    bucket_trusted = os.environ.get('BUCKET_TRUSTED', BUCKET_TRUSTED)
     
-    # 2. Leitura dos dados do S3
+    print(f"\n📦 Buckets configurados:")
+    print(f"   RAW: {bucket_raw}")
+    print(f"   TRUSTED: {bucket_trusted}")
+    
+    # 1. Leitura dos dados do S3
     try:
         print(f"\n📖 Lendo dados de medical_appointments...")
-        print(f"   Origem: {path_med_raw}")
-        df_med = pd.read_csv(path_med_raw)
+        print(f"   Origem: s3://{bucket_raw}/{CHAVE_MED}")
+        df_med = ler_csv_do_s3(bucket_raw, CHAVE_MED)
         print(f"   ✅ {len(df_med)} registros lidos")
         
         print(f"\n📖 Lendo dados de clima...")
-        print(f"   Origem: {path_clima_raw}")
-        df_clima = pd.read_csv(path_clima_raw, sep=';')
+        print(f"   Origem: s3://{bucket_raw}/{CHAVE_CLIMA}")
+        df_clima = ler_csv_do_s3(bucket_raw, CHAVE_CLIMA, sep=';')
         print(f"   ✅ {len(df_clima)} registros lidos")
         
     except Exception as e:
@@ -123,7 +149,7 @@ def lambda_handler(event, context):
             'body': f'Erro na leitura do S3: {str(e)}'
         }
     
-    # 3. Tratamento dos dados médicos
+    # 2. Tratamento dos dados médicos
     print(f"\n🔧 Tratando dados médicos...")
     try:
         df_med = padronizar_data_hora(df_med, 'ScheduledDay')
@@ -150,7 +176,7 @@ def lambda_handler(event, context):
             'body': f'Erro no tratamento de dados médicos: {str(e)}'
         }
     
-    # 4. Tratamento dos dados climáticos
+    # 3. Tratamento dos dados climáticos
     print(f"\n🔧 Tratando dados climáticos...")
     try:
         # Renomear colunas
@@ -179,19 +205,18 @@ def lambda_handler(event, context):
             'body': f'Erro no tratamento de dados climáticos: {str(e)}'
         }
     
-    # 5. Salvar dados tratados no bucket trusted
-    path_med_trusted = f"s3://{BUCKET_TRUSTED}/clinica/medical_appointment_no_show.csv"
-    path_clima_trusted = f"s3://{BUCKET_TRUSTED}/clima/clima.csv"
-    
+    # 4. Salvar dados tratados no bucket trusted
     try:
         print(f"\n💾 Salvando dados médicos...")
-        print(f"   Destino: {path_med_trusted}")
-        df_med.to_csv(path_med_trusted, index=False)
+        key_med = "clinica/medical_appointment_no_show.csv"
+        print(f"   Destino: s3://{bucket_trusted}/{key_med}")
+        salvar_csv_no_s3(df_med, bucket_trusted, key_med)
         print(f"   ✅ Salvo com sucesso")
         
         print(f"\n💾 Salvando dados climáticos...")
-        print(f"   Destino: {path_clima_trusted}")
-        df_clima.to_csv(path_clima_trusted, index=False)
+        key_clima = "clima/clima.csv"
+        print(f"   Destino: s3://{bucket_trusted}/{key_clima}")
+        salvar_csv_no_s3(df_clima, bucket_trusted, key_clima)
         print(f"   ✅ Salvo com sucesso")
         
     except Exception as e:
@@ -201,7 +226,7 @@ def lambda_handler(event, context):
             'body': f'Erro ao salvar dados no S3: {str(e)}'
         }
     
-    # 6. Retorno de sucesso
+    # 5. Retorno de sucesso
     print("\n" + "=" * 60)
     print("✅ PROCESSAMENTO CONCLUÍDO COM SUCESSO!")
     print("=" * 60)
@@ -213,8 +238,8 @@ def lambda_handler(event, context):
             'registros_medicos': len(df_med),
             'registros_clima': len(df_clima),
             'arquivos_gerados': [
-                path_med_trusted,
-                path_clima_trusted
+                f"s3://{bucket_trusted}/clinica/medical_appointment_no_show.csv",
+                f"s3://{bucket_trusted}/clima/clima.csv"
             ]
         }
     }

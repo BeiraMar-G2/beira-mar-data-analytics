@@ -1,3 +1,4 @@
+# %%
 import pandas as pd
 
 df_med = pd.read_csv("dados/trusted/medical_appointment_no_show.csv")
