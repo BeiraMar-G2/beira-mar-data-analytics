@@ -100,6 +100,10 @@ function run_query() {
             return 0
         elif [ "$STATUS" = "FAILED" ]; then
             echo "   ❌ Erro ao criar $NAME"
+            aws athena get-query-execution \
+                --query-execution-id "$EXEC_ID" \
+                --query 'QueryExecution.Status.StateChangeReason' \
+                --output text
             return 1
         fi
         
@@ -131,24 +135,38 @@ WHERE patientid IS NOT NULL
 run_query "DIM_DATA" "
 CREATE OR REPLACE VIEW star_schema_beira_mar.dim_data AS
 SELECT DISTINCT
-  DATE(dt) AS data_key,
-  dt AS data_completa,
-  YEAR(dt) AS ano,
-  MONTH(dt) AS mes,
-  DAY(dt) AS dia,
-  DAY_OF_WEEK(dt) AS dia_semana,
-  QUARTER(dt) AS trimestre,
+  DATE(CAST(dt AS TIMESTAMP)) AS data_key,
+  CAST(dt AS TIMESTAMP) AS data_completa,
+  YEAR(CAST(dt AS TIMESTAMP)) AS ano,
+  MONTH(CAST(dt AS TIMESTAMP)) AS mes,
+  DAY(CAST(dt AS TIMESTAMP)) AS dia,
+  DAY_OF_WEEK(CAST(dt AS TIMESTAMP)) AS dia_semana,
+  QUARTER(CAST(dt AS TIMESTAMP)) AS trimestre,
   estacao_ano,
   CASE 
-    WHEN DAY_OF_WEEK(dt) IN (6, 7) THEN 'FIM_DE_SEMANA'
+    WHEN DAY_OF_WEEK(CAST(dt AS TIMESTAMP)) IN (6, 7) THEN 'FIM_DE_SEMANA'
     ELSE 'DIA_UTIL'
   END AS tipo_dia
 FROM (
-  SELECT DISTINCT scheduledday AS dt, estacao_ano
+  SELECT DISTINCT 
+    scheduledday AS dt, 
+    estacao_ano
   FROM refined_beira_mar.clinica_com_clima
   WHERE scheduledday IS NOT NULL
+  
   UNION
-  SELECT DISTINCT appointmentday AS dt, estacao_ano
+  
+  SELECT DISTINCT 
+    CASE 
+      WHEN appointmentday LIKE '%/%' THEN 
+        CONCAT(
+          SUBSTR(appointmentday, 7, 4), '-',
+          SUBSTR(appointmentday, 4, 2), '-',
+          SUBSTR(appointmentday, 1, 2), ' 00:00:00'
+        )
+      ELSE appointmentday
+    END AS dt,
+    estacao_ano
   FROM refined_beira_mar.clinica_com_clima
   WHERE appointmentday IS NOT NULL
 ) datas
@@ -169,10 +187,10 @@ run_query "DIM_CLIMA" "
 CREATE OR REPLACE VIEW star_schema_beira_mar.dim_clima AS
 SELECT DISTINCT
   CONCAT(
-    CAST(DATE(data_hora_clima) AS VARCHAR), '_',
-    CAST(HOUR(data_hora_clima) AS VARCHAR)
+    CAST(DATE(CAST(data_hora_clima AS TIMESTAMP)) AS VARCHAR), '_',
+    CAST(HOUR(CAST(data_hora_clima AS TIMESTAMP)) AS VARCHAR)
   ) AS clima_key,
-  data_hora_clima,
+  CAST(data_hora_clima AS TIMESTAMP) AS data_hora_clima,
   temp_ar_c AS temperatura_media,
   temp_max_c AS temperatura_maxima,
   temp_min_c AS temperatura_minima,
@@ -193,12 +211,24 @@ SELECT
     CAST(scheduledday AS VARCHAR)
   ) AS appointment_id,
   patientid AS patient_id,
-  DATE(scheduledday) AS data_agendamento_key,
-  DATE(appointmentday) AS data_consulta_key,
+  DATE(CAST(scheduledday AS TIMESTAMP)) AS data_agendamento_key,
+  DATE(
+    CAST(
+      CASE 
+        WHEN appointmentday LIKE '%/%' THEN 
+          CONCAT(
+            SUBSTR(appointmentday, 7, 4), '-',
+            SUBSTR(appointmentday, 4, 2), '-',
+            SUBSTR(appointmentday, 1, 2), ' 00:00:00'
+          )
+        ELSE appointmentday
+      END AS TIMESTAMP
+    )
+  ) AS data_consulta_key,
   neighbourhood AS bairro_key,
   CONCAT(
-    CAST(DATE(data_hora_clima) AS VARCHAR), '_',
-    CAST(HOUR(data_hora_clima) AS VARCHAR)
+    CAST(DATE(CAST(data_hora_clima AS TIMESTAMP)) AS VARCHAR), '_',
+    CAST(HOUR(CAST(data_hora_clima AS TIMESTAMP)) AS VARCHAR)
   ) AS clima_key,
   age AS idade,
   CASE WHEN \"no-show\" = 0 THEN 1 ELSE 0 END AS compareceu,
