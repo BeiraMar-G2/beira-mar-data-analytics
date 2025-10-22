@@ -185,7 +185,7 @@ output "instrucoes" {
   value = <<-EOT
     ✅ Infraestrutura criada!
     Próximos passos:
-    1. Execute o arquivo .py 01_envio_bucket_raw.py
-    2. Execute no bash: ./01run_pipeline.sh
+    1. Execute o arquivo 01_envio_bucket_raw.py
+    2. Execute no bash: bash 01run_pipeline.sh
   EOT
 }

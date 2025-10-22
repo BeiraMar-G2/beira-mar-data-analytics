@@ -130,29 +130,17 @@ SELECT DISTINCT
 FROM refined_beira_mar.clinica_com_clima
 WHERE patientid IS NOT NULL
 "
-
 # DIM_DATA
 run_query "DIM_DATA" "
 CREATE OR REPLACE VIEW star_schema_beira_mar.dim_data AS
-SELECT DISTINCT
-  DATE(CAST(dt AS TIMESTAMP)) AS data_key,
-  CAST(dt AS TIMESTAMP) AS data_completa,
-  YEAR(CAST(dt AS TIMESTAMP)) AS ano,
-  MONTH(CAST(dt AS TIMESTAMP)) AS mes,
-  DAY(CAST(dt AS TIMESTAMP)) AS dia,
-  DAY_OF_WEEK(CAST(dt AS TIMESTAMP)) AS dia_semana,
-  QUARTER(CAST(dt AS TIMESTAMP)) AS trimestre,
-  estacao_ano,
-  CASE 
-    WHEN DAY_OF_WEEK(CAST(dt AS TIMESTAMP)) IN (6, 7) THEN 'FIM_DE_SEMANA'
-    ELSE 'DIA_UTIL'
-  END AS tipo_dia
-FROM (
+WITH datas_parsed AS (
   SELECT DISTINCT 
     scheduledday AS dt, 
-    estacao_ano
+    estacao_ano,
+    parse_datetime(scheduledday, 'yyyy-MM-dd HH:mm:ss') AS dt_parsed
   FROM refined_beira_mar.clinica_com_clima
   WHERE scheduledday IS NOT NULL
+    AND LENGTH(scheduledday) = 19
   
   UNION
   
@@ -166,12 +154,38 @@ FROM (
         )
       ELSE appointmentday
     END AS dt,
-    estacao_ano
+    estacao_ano,
+    CASE 
+      WHEN appointmentday LIKE '%/%' THEN 
+        parse_datetime(
+          CONCAT(
+            SUBSTR(appointmentday, 7, 4), '-',
+            SUBSTR(appointmentday, 4, 2), '-',
+            SUBSTR(appointmentday, 1, 2), ' 00:00:00'
+          ), 
+          'yyyy-MM-dd HH:mm:ss'
+        )
+      ELSE parse_datetime(appointmentday, 'yyyy-MM-dd HH:mm:ss')
+    END AS dt_parsed
   FROM refined_beira_mar.clinica_com_clima
   WHERE appointmentday IS NOT NULL
-) datas
+)
+SELECT DISTINCT
+  date(dt_parsed) AS data_key,
+  dt AS data_completa,
+  year(dt_parsed) AS ano,
+  month(dt_parsed) AS mes,
+  day(dt_parsed) AS dia,
+  day_of_week(dt_parsed) AS dia_semana,
+  quarter(dt_parsed) AS trimestre,
+  estacao_ano,
+  CASE 
+    WHEN day_of_week(dt_parsed) IN (6, 7) THEN 'FIM_DE_SEMANA'
+    ELSE 'DIA_UTIL'
+  END AS tipo_dia
+FROM datas_parsed
+WHERE dt_parsed IS NOT NULL
 "
-
 # DIM_BAIRRO
 run_query "DIM_BAIRRO" "
 CREATE OR REPLACE VIEW star_schema_beira_mar.dim_bairro AS
@@ -187,10 +201,10 @@ run_query "DIM_CLIMA" "
 CREATE OR REPLACE VIEW star_schema_beira_mar.dim_clima AS
 SELECT DISTINCT
   CONCAT(
-    CAST(DATE(CAST(data_hora_clima AS TIMESTAMP)) AS VARCHAR), '_',
-    CAST(HOUR(CAST(data_hora_clima AS TIMESTAMP)) AS VARCHAR)
+    SUBSTRING(data_hora_clima, 1, 10), '_',
+    SUBSTRING(data_hora_clima, 12, 2)
   ) AS clima_key,
-  CAST(data_hora_clima AS TIMESTAMP) AS data_hora_clima,
+  data_hora_clima,
   temp_ar_c AS temperatura_media,
   temp_max_c AS temperatura_maxima,
   temp_min_c AS temperatura_minima,
@@ -200,8 +214,8 @@ SELECT DISTINCT
   estacao_ano
 FROM refined_beira_mar.clinica_com_clima
 WHERE data_hora_clima IS NOT NULL
+  AND data_hora_clima != ''
 "
-
 # FATO_CONSULTAS
 run_query "FATO_CONSULTAS" "
 CREATE OR REPLACE VIEW star_schema_beira_mar.fato_consultas AS
@@ -211,24 +225,25 @@ SELECT
     CAST(scheduledday AS VARCHAR)
   ) AS appointment_id,
   patientid AS patient_id,
-  DATE(CAST(scheduledday AS TIMESTAMP)) AS data_agendamento_key,
+  DATE(parse_datetime(scheduledday, 'yyyy-MM-dd HH:mm:ss')) AS data_agendamento_key,
   DATE(
-    CAST(
-      CASE 
-        WHEN appointmentday LIKE '%/%' THEN 
+    CASE 
+      WHEN appointmentday LIKE '%/%' THEN 
+        parse_datetime(
           CONCAT(
             SUBSTR(appointmentday, 7, 4), '-',
             SUBSTR(appointmentday, 4, 2), '-',
             SUBSTR(appointmentday, 1, 2), ' 00:00:00'
-          )
-        ELSE appointmentday
-      END AS TIMESTAMP
-    )
+          ), 
+          'yyyy-MM-dd HH:mm:ss'
+        )
+      ELSE parse_datetime(appointmentday, 'yyyy-MM-dd HH:mm:ss')
+    END
   ) AS data_consulta_key,
   neighbourhood AS bairro_key,
   CONCAT(
-    CAST(DATE(CAST(data_hora_clima AS TIMESTAMP)) AS VARCHAR), '_',
-    CAST(HOUR(CAST(data_hora_clima AS TIMESTAMP)) AS VARCHAR)
+    SUBSTRING(data_hora_clima, 1, 10), '_',
+    SUBSTRING(data_hora_clima, 12, 2)
   ) AS clima_key,
   age AS idade,
   CASE WHEN \"no-show\" = 0 THEN 1 ELSE 0 END AS compareceu,
@@ -238,6 +253,8 @@ SELECT
 FROM refined_beira_mar.clinica_com_clima
 WHERE appointmentid IS NOT NULL
   AND scheduledday IS NOT NULL
+  AND scheduledday != ''
+  AND LENGTH(scheduledday) = 19
 "
 
 # 5. Teste Final
