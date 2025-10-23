@@ -186,6 +186,7 @@ SELECT DISTINCT
 FROM datas_parsed
 WHERE dt_parsed IS NOT NULL
 "
+
 # DIM_BAIRRO
 run_query "DIM_BAIRRO" "
 CREATE OR REPLACE VIEW star_schema_beira_mar.dim_bairro AS
