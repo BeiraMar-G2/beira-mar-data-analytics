@@ -278,51 +278,6 @@ Settings:
   Output Location: s3://athena-results-beira-mar/output/
 ```
 
-### 7.2 Exemplos de Queries para Dashboards
-
-**No-Show por Faixa Etária:**
-```sql
-SELECT 
-  dp.faixa_etaria,
-  COUNT(*) as total,
-  SUM(fc.qtd_no_shows) as no_shows,
-  ROUND(AVG(CAST(fc.qtd_no_shows AS DOUBLE)) * 100, 2) as taxa_pct
-FROM star_schema_beira_mar.fato_consultas fc
-JOIN star_schema_beira_mar.dim_paciente dp 
-  ON fc.patient_id = dp.patient_key
-GROUP BY dp.faixa_etaria
-ORDER BY taxa_pct DESC;
-```
-
-**No-Show por Dia da Semana:**
-```sql
-SELECT 
-  dd.dia_semana,
-  dd.tipo_dia,
-  COUNT(*) as total,
-  ROUND(AVG(CAST(fc.qtd_no_shows AS DOUBLE)) * 100, 2) as taxa_pct
-FROM star_schema_beira_mar.fato_consultas fc
-JOIN star_schema_beira_mar.dim_data dd 
-  ON fc.data_consulta_key = dd.data_key
-GROUP BY dd.dia_semana, dd.tipo_dia
-ORDER BY dd.dia_semana;
-```
-
-**No-Show por Condições Climáticas:**
-```sql
-SELECT 
-  dc.classificacao_temp,
-  dc.estacao_ano,
-  COUNT(*) as total,
-  ROUND(AVG(CAST(fc.qtd_no_shows AS DOUBLE)) * 100, 2) as taxa_pct,
-  ROUND(AVG(dc.temperatura_media), 1) as temp_media
-FROM star_schema_beira_mar.fato_consultas fc
-LEFT JOIN star_schema_beira_mar.dim_clima dc 
-  ON fc.clima_key = dc.clima_key
-GROUP BY dc.classificacao_temp, dc.estacao_ano
-ORDER BY taxa_pct DESC;
-```
-
 ---
 
 ## 🔄 Executar Novamente (Dados Atualizados)
