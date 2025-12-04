@@ -1,0 +1,45 @@
+{
+    "total_comentarios": 56,
+    "media_palavras": 4.339285714285714,
+    "total_emojis": 83,
+    "emojis_unicos": 11,
+    "top_5_emojis": [
+        [
+            "😍",
+            47
+        ],
+        [
+            "😂",
+            13
+        ],
+        [
+            "👏",
+            12
+        ],
+        [
+            "🔥",
+            3
+        ],
+        [
+            "🏻",
+            2
+        ]
+    ],
+    "sentimento_positivo_pct": 0.0,
+    "sentimento_negativo_pct": 0.0,
+    "sentimento_neutro_pct": 100.0,
+    "top_10_termos_tfidf": [
+        "abenco",
+        "ame",
+        "amig",
+        "arras",
+        "cad",
+        "conhec",
+        "continu",
+        "demal",
+        "dess",
+        "deu"
+    ],
+    "num_clusters": 3,
+    "num_topicos": 3
+}

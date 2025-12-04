@@ -37,17 +37,91 @@ def salvar_csv_no_s3(df, bucket, key):
         raise Exception(f"Erro ao salvar {key} no bucket {bucket}: {str(e)}")
 
 
+# ============================================================
+# MAPEAMENTOS DE SERVIÇOS MÉDICOS → ESTÉTICOS
+# ============================================================
+
+MAPEAMENTO_SERVICOS = {
+    'Biópsias simples': 'Design Simples de Sobrancelhas',
+    'Nutricionista': 'Depilação Facial',
+    'Fisioterapia': 'Design de Sobrancelhas com Henna',
+    'Pediatria': 'Massagem Modeladora',
+    'Ginecologia': 'Pump Up (Glúteos) + Eletroestimulação',
+    'Dermatologia': 'Massagem Relaxante',
+    'Cardiologia': 'Drenagem Linfática',
+    'Ecocardiograma': 'Limpeza de Pele',
+    'Tomografia': 'Detox Corporal',
+    'Ressonancia Magnetica': 'Aplicação de Enzimas',
+    'Preenchimento Facial': 'Hidrolipo NA'
+}
+
+MAPEAMENTO_PRECOS = {
+    'Biópsias simples': 30.00,
+    'Nutricionista': 35.00,
+    'Fisioterapia': 45.00,
+    'Pediatria': 90.00,
+    'Ginecologia': 90.00,
+    'Dermatologia': 100.00,
+    'Cardiologia': 100.00,
+    'Ecocardiograma': 150.00,
+    'Tomografia': 150.00,
+    'Ressonancia Magnetica': 180.00,
+    'Preenchimento Facial': 180.00
+}
+
+MAPEAMENTO_DURACAO = {
+    'Biópsias simples': 30,
+    'Nutricionista': 30,
+    'Fisioterapia': 90,
+    'Pediatria': 40,
+    'Ginecologia': 60,
+    'Dermatologia': 60,
+    'Cardiologia': 60,
+    'Ecocardiograma': 120,
+    'Tomografia': 120,
+    'Ressonancia Magnetica': 60,
+    'Preenchimento Facial': 150
+}
+
+
+def mapear_servicos_esteticos(df):
+    """
+    Converte serviços médicos para serviços estéticos
+    VERSÃO OTIMIZADA - Complexidade O(n)
+    """
+    print(f"   🔄 Mapeando serviços médicos → estéticos...")
+    
+    # 1. Mapear nomes dos serviços
+    df['ServiceName'] = df['ServiceName'].map(MAPEAMENTO_SERVICOS).fillna(df['ServiceName'])
+    
+    # 2. Criar dicionário reverso (serviço estético -> serviço médico original)
+    reverso = {v: k for k, v in MAPEAMENTO_SERVICOS.items()}
+    
+    # 3. Funções para obter preço e duração (SEM acesso ao DataFrame!)
+    def obter_preco(nome_servico_estetico):
+        """Busca o preço baseado no serviço estético"""
+        servico_medico_original = reverso.get(nome_servico_estetico, nome_servico_estetico)
+        return MAPEAMENTO_PRECOS.get(servico_medico_original)
+    
+    def obter_duracao(nome_servico_estetico):
+        """Busca a duração baseada no serviço estético"""
+        servico_medico_original = reverso.get(nome_servico_estetico, nome_servico_estetico)
+        return MAPEAMENTO_DURACAO.get(servico_medico_original)
+    
+    # 4. Aplicar mapeamentos (uma única passada no DataFrame!)
+    df['Price'] = df['ServiceName'].apply(obter_preco)
+    df['Duration'] = df['ServiceName'].apply(obter_duracao)
+    
+    servicos_unicos = df['ServiceName'].nunique()
+    print(f"   ✅ Mapeamento concluído: {servicos_unicos} serviços estéticos")
+    
+    return df
+
+
 def padronizar_data_hora(df, coluna):
     """Padroniza colunas de data e hora para formato brasileiro"""
     df[coluna] = pd.to_datetime(df[coluna])
     df[coluna] = df[coluna].dt.strftime('%d/%m/%Y %H:%M:%S')
-    return df
-
-
-def padronizar_data(df, coluna):
-    """Padroniza datas no formato MM/DD/YYYY para DD/MM/YYYY"""
-    df[coluna] = pd.to_datetime(df[coluna], format='%m/%d/%Y')
-    df[coluna] = df[coluna].dt.strftime('%d/%m/%Y')
     return df
 
 
@@ -130,7 +204,9 @@ def lambda_handler(event, context):
     print(f"   RAW: {bucket_raw}")
     print(f"   TRUSTED: {bucket_trusted}")
     
-    # 1. Leitura dos dados do S3
+    # ============================================================
+    # 1. LEITURA DOS DADOS DO S3
+    # ============================================================
     try:
         print(f"\n📖 Lendo dados de medical_appointments...")
         print(f"   Origem: s3://{bucket_raw}/{CHAVE_MED}")
@@ -149,14 +225,28 @@ def lambda_handler(event, context):
             'body': f'Erro na leitura do S3: {str(e)}'
         }
     
-    # 2. Tratamento dos dados médicos
+    # ============================================================
+    # 2. TRATAMENTO DOS DADOS MÉDICOS
+    # ============================================================
     print(f"\n🔧 Tratando dados médicos...")
     try:
+        # Mapear serviços médicos para estéticos (VERSÃO OTIMIZADA)
+        df_med = mapear_servicos_esteticos(df_med)
+        
+        # Padronizar datas
         df_med = padronizar_data_hora(df_med, 'ScheduledDay')
         df_med = padronizar_data_hora(df_med, 'AppointmentDay')
+        
+        # Padronizar colunas
         df_med = padronizar_colunas(df_med)
+        
+        # Converter No-Show para binário
         df_med = converter_para_binario(df_med, 'NO-SHOW')
+        
+        # Remover acentos
         df_med = remover_acentos(df_med)
+        
+        # Padronizar para maiúsculas
         df_med = padronizar_maiusculo(df_med)
         
         # Filtrar idades inválidas
@@ -171,12 +261,16 @@ def lambda_handler(event, context):
         
     except Exception as e:
         print(f"\n❌ ERRO no tratamento de dados médicos: {e}")
+        import traceback
+        print(traceback.format_exc())
         return {
             'statusCode': 500,
             'body': f'Erro no tratamento de dados médicos: {str(e)}'
         }
     
-    # 3. Tratamento dos dados climáticos
+    # ============================================================
+    # 3. TRATAMENTO DOS DADOS CLIMÁTICOS
+    # ============================================================
     print(f"\n🔧 Tratando dados climáticos...")
     try:
         # Renomear colunas
@@ -200,12 +294,16 @@ def lambda_handler(event, context):
         
     except Exception as e:
         print(f"\n❌ ERRO no tratamento de dados climáticos: {e}")
+        import traceback
+        print(traceback.format_exc())
         return {
             'statusCode': 500,
             'body': f'Erro no tratamento de dados climáticos: {str(e)}'
         }
     
-    # 4. Salvar dados tratados no bucket trusted
+    # ============================================================
+    # 4. SALVAR DADOS TRATADOS NO BUCKET TRUSTED
+    # ============================================================
     try:
         print(f"\n💾 Salvando dados médicos...")
         key_med = "clinica/medical_appointment_no_show.csv"
@@ -226,7 +324,9 @@ def lambda_handler(event, context):
             'body': f'Erro ao salvar dados no S3: {str(e)}'
         }
     
-    # 5. Retorno de sucesso
+    # ============================================================
+    # 5. RETORNO DE SUCESSO
+    # ============================================================
     print("\n" + "=" * 60)
     print("✅ PROCESSAMENTO CONCLUÍDO COM SUCESSO!")
     print("=" * 60)

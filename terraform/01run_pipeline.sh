@@ -217,6 +217,42 @@ FROM refined_beira_mar.clinica_com_clima
 WHERE data_hora_clima IS NOT NULL
   AND data_hora_clima != ''
 "
+
+run_query "DIM_SERVICOS" "
+CREATE OR REPLACE VIEW star_schema_beira_mar.dim_servico AS
+WITH servicos_agregados AS (
+  SELECT 
+    servicename AS nome_servico,
+    CAST(AVG(price) AS DECIMAL(10,2)) AS preco,
+    CAST(AVG(duration) AS INTEGER) AS duracao_minutos,
+    CASE 
+      WHEN AVG(price) < 50 THEN 'BASICO'
+      WHEN AVG(price) < 120 THEN 'INTERMEDIARIO'
+      ELSE 'PREMIUM'
+    END AS categoria,
+    COUNT(*) AS total_consultas,
+    SUM(CASE WHEN \"no-show\" = 1 THEN 1 ELSE 0 END) AS total_faltas,
+    ROUND(
+      CAST(SUM(CASE WHEN \"no-show\" = 1 THEN 1 ELSE 0 END) AS DOUBLE) / 
+      CAST(COUNT(*) AS DOUBLE) * 100, 
+      2
+    ) AS taxa_noshow_pct
+  FROM refined_beira_mar.clinica_com_clima
+  WHERE servicename IS NOT NULL
+  GROUP BY servicename
+)
+SELECT 
+  nome_servico,
+  preco,
+  duracao_minutos,
+  categoria,
+  total_consultas,
+  total_faltas,
+  taxa_noshow_pct
+FROM servicos_agregados
+ORDER BY categoria, preco
+"
+
 # FATO_CONSULTAS
 run_query "FATO_CONSULTAS" "
 CREATE OR REPLACE VIEW star_schema_beira_mar.fato_consultas AS
@@ -246,6 +282,7 @@ SELECT
     SUBSTRING(data_hora_clima, 1, 10), '_',
     SUBSTRING(data_hora_clima, 12, 2)
   ) AS clima_key,
+  servicename AS servico_key,
   age AS idade,
   CASE WHEN \"no-show\" = 0 THEN 1 ELSE 0 END AS compareceu,
   sms_received AS sms_recebido,
@@ -256,6 +293,7 @@ WHERE appointmentid IS NOT NULL
   AND scheduledday IS NOT NULL
   AND scheduledday != ''
   AND LENGTH(scheduledday) = 19
+  AND servicename IS NOT NULL
 "
 
 # 5. Teste Final
@@ -290,6 +328,7 @@ echo "   - dim_paciente"
 echo "   - dim_data"
 echo "   - dim_bairro"
 echo "   - dim_clima"
+echo "   - dim_servicos"
 echo "   - fato_consultas"
 echo ""
 echo "🔗 Conecte o Grafana:"

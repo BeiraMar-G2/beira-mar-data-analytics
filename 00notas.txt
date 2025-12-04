@@ -1,5 +1,7 @@
 Justificativa modelo estrela: https://claude.ai/chat/381ce81a-a022-4999-adac-86d81b05284b
 
+Snapshot: https://snapshots.raintank.io/dashboard/snapshot/mKIoztFWDeURGNfgGqMQn0TvUMeGuTr9
+
 Camada: 
 AWSSDKPandas-Python312
 19
@@ -7,39 +9,35 @@ python3.12
 x86_64
 arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python312:19
 
+
+Comandos 
+
+ python3.12 -m streamlit run dashboard.py
+
+
 Próximos passos: 
-1 - Salvar Querys
-2 - Tirar Snapshot: https://snapshots.raintank.io/dashboard/snapshot/mKIoztFWDeURGNfgGqMQn0TvUMeGuTr9
-3 - Adicionar criação de dim serviço no run_pipeline e testar novamente:
-CREATE TABLE star_schema_beira_mar.dim_servico_estatisticas AS
-SELECT * FROM (
-  VALUES
-    -- Serviços BÁSICOS (maior taxa de no-show)
-    ('Design Simples de Sobrancelhas', 30.00, 30, 'BASICO', 3420, 1009, 29.50),
-    ('Depilação Facial', 35.00, 30, 'BASICO', 2890, 803, 27.80),
-    ('Design de Sobrancelhas com Henna', 45.00, 90, 'BASICO', 2150, 520, 24.20),
-    
-    -- Serviços INTERMEDIÁRIOS
-    ('Massagem Modeladora', 90.00, 40, 'INTERMEDIARIO', 4560, 971, 21.30),
-    ('Pump Up (Glúteos) + Eletroestimulação', 90.00, 60, 'INTERMEDIARIO', 3780, 745, 19.70),
-    ('Drenagem Linfática', 100.00, 60, 'INTERMEDIARIO', 5240, 970, 18.50),
-    ('Massagem Relaxante', 100.00, 60, 'INTERMEDIARIO', 4920, 930, 18.90),
-    
-    -- Serviços PREMIUM (menor taxa de no-show)
-    ('Limpeza de Pele', 150.00, 120, 'PREMIUM', 3650, 555, 15.20),
-    ('Detox Corporal', 150.00, 120, 'PREMIUM', 2940, 435, 14.80),
-    ('Aplicação de Enzimas', 180.00, 60, 'PREMIUM', 2870, 356, 12.40),
-    ('Hidrolipo NA', 180.00, 150, 'PREMIUM', 1890, 206, 10.90)
-) AS t (
-  nome_servico, 
-  preco, 
-  duracao_minutos, 
-  categoria, 
-  total_consultas, 
-  total_faltas, 
-  taxa_noshow_pct
-)
+Feito -  Analisar comentários
+
+4 - Analise de Dados nao estruturados
+Analisar Posts: 
+Tentar vincular curtidas com horario do dia
+Analisar uso de emojis
+
+5 - 
+Criação de relatorio de Analytics
+Criação de relatorio BI 
+ 
+6 - Passar analytics para streamlit
+7 - Passar BI para streamlit
+8 - Criar script para definir pacotes e taxa de cancelamento
+8 - Criar novas lambdas
+10 - Arrumar grafico de  pizza em relatorio
 
 
 
-4 - Analise de gráficos
+1 - Validar analise de dados nao estruturados
+2 - storytelling para apresentação
+3 - Limitações: Nao quer lucro e exclusao de pagament, algumas partes de analise de dados foram feitas com cunho educativo
+4 - Dividir relatorio de BI e Analytics 
+5 - Quem vamos trazer 
+6 - Defesa do dataset -> 
