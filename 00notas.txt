@@ -14,30 +14,33 @@ Comandos
 
  python3.12 -m streamlit run dashboard.py
 
+Feito: 
+Analisar comentários
+- Arrumar gráfico com emojis
 
-Próximos passos: 
-Feito -  Analisar comentários
+Próximos passos:
 
-4 - Analise de Dados nao estruturados
-Analisar Posts: 
-Tentar vincular curtidas com horario do dia
-Analisar uso de emojis
+0 - Alterar dados para se concentrar no publico alvo da beneficiaria (tirar genero masculino, alterar distribuição de idade e escolaridade)
 
-5 - 
-Criação de relatorio de Analytics
-Criação de relatorio BI 
- 
-6 - Passar analytics para streamlit
-7 - Passar BI para streamlit
-8 - Criar script para definir pacotes e taxa de cancelamento
-8 - Criar novas lambdas
-10 - Arrumar grafico de  pizza em relatorio
+1 - Dados Não Estruturados: 
+- Alterar diagramação de palavras (deixar palavras completas, não cortadas)
+- Alterar cor da barra dos emojis (está quase transparente embaixo)
+- Arrumar analise de sentimento
+- Tentar vincular curtidas com horario do dia
+- Analisar uso de emojis
+
+2 - Relatórios 
+Passar relatório de Analytics para estrutura com design melhor + Arrumar grafico de  pizza em relatorio (Gustavo)
+Criação de relatorio BI com Python e conexão com banco de dados 
+
+3 - Passar analytics para streamlit
+3.1 - Tirar filtros por genero e colocar por dia da semana
+4 - Criar script para definir pacotes e taxa de cancelamento
+5 - Criar novas lambdas
 
 
 
-1 - Validar analise de dados nao estruturados
-2 - storytelling para apresentação
-3 - Limitações: Nao quer lucro e exclusao de pagament, algumas partes de analise de dados foram feitas com cunho educativo
-4 - Dividir relatorio de BI e Analytics 
-5 - Quem vamos trazer 
-6 - Defesa do dataset -> 
+6 - Defesa do dataset:
+-> Grande massa de dados permite filtrar pelo perfil da persona que a beneficiaria nos passou
+-> Proximidade Geografica 
+-> Possibilidade da substituição inteligente de dados (usar valores e tempo do serviço como base)

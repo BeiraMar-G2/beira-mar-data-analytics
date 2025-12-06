@@ -1,8 +1,8 @@
 {
     "total_comentarios": 56,
     "media_palavras": 4.339285714285714,
-    "total_emojis": 83,
-    "emojis_unicos": 11,
+    "total_emojis": 125,
+    "emojis_unicos": 9,
     "top_5_emojis": [
         [
             "😍",
@@ -10,19 +10,19 @@
         ],
         [
             "😂",
-            13
+            25
         ],
         [
             "👏",
-            12
+            24
         ],
         [
             "🔥",
-            3
+            9
         ],
         [
-            "🏻",
-            2
+            "🙏",
+            5
         ]
     ],
     "sentimento_positivo_pct": 0.0,
