@@ -1,57 +1,57 @@
 comment_text_original,comment_text_processed,num_palavras,num_emojis,sentimento,polaridade,cluster
 Ameeiiii,ameeiii,1,0,neutro,0.0,0
 😂😂😂😂😂😂😂😂😂😂😂😂,,0,12,neutro,0.0,-1
-Talvez eu tenha me identificado kkkkkkkk,talv identific kkkkkkkk,6,0,neutro,0.0,0
+Talvez eu tenha me identificado kkkkkkkk,talv identific kkkkkkkk,6,0,positivo,0.8,0
 😂😂😂😂😂😂😂😂😂😂😂😂,,0,12,neutro,0.0,-1
-Kkkk fui rir e chorei,rir chor,5,0,neutro,0.0,0
-KKKKKKKK em todas as áreas da beleza amiga ❤️❤️😂,kkkkkkkk tod are bel amig,8,1,neutro,0.0,0
+Kkkk fui rir e chorei,rir chor,5,0,positivo,0.75,0
+KKKKKKKK em todas as áreas da beleza amiga ❤️❤️😂,kkkkkkkk tod are bel amig,8,1,positivo,0.8,0
 Ameeiiiiii❤️,ameeiiiii,1,0,neutro,0.0,0
 👏👏👏👏👏👏👏👏❤️❤️,,0,8,neutro,0.0,-1
-Parabéns lindaa 😍,parab linda,2,1,neutro,0.0,0
+Parabéns lindaa 😍,parab linda,2,1,positivo,0.85,0
 Parabéns cunha ❤️❤️❤️,parab cunh,2,0,neutro,0.0,0
 "Parabéns meu bem, você merece o mundo! ❤️",parab bem voc merec mund,7,0,neutro,0.0,0
-Parabéns minha princesa😍❤️❤️❤️ Você merece tooooodo sucesso do mundo😍❤️,parab princes voc merec toooood sucess mund,9,2,neutro,0.0,0
-"Parabéns pelo seu lindo trabalho , você é uma profissional incrível ❤️",parab lind trabalh voc profiss incri,10,0,neutro,0.0,0
-Parabéns linda que Deus te abençoe,parab lind deu abenco,6,0,neutro,0.0,0
+Parabéns minha princesa😍❤️❤️❤️ Você merece tooooodo sucesso do mundo😍❤️,parab princes voc merec toooood sucess mund,9,2,positivo,0.3,0
+"Parabéns pelo seu lindo trabalho , você é uma profissional incrível ❤️",parab lind trabalh voc profiss incri,10,0,positivo,0.6166666666666667,0
+Parabéns linda que Deus te abençoe,parab lind deu abenco,6,0,positivo,0.85,0
 Parabéns pela trajetória!!! Que Deus abençoe 🙏🙏🙏🙏🙏✨,parab trajet deu abenco,6,5,neutro,0.0,0
 Arrasa!❤️,arras,1,0,neutro,0.0,0
-"Lindaa, sucesso sempre p você querida 👏👏👏👏👏👏👏👏👏👏❤️",linda sucess sempr voc quer,6,10,neutro,0.0,0
-Você é maravilhosa ❤️❤️,voc maravilh,3,0,neutro,0.0,0
+"Lindaa, sucesso sempre p você querida 👏👏👏👏👏👏👏👏👏👏❤️",linda sucess sempr voc quer,6,10,positivo,0.3,0
+Você é maravilhosa ❤️❤️,voc maravilh,3,0,positivo,1.0,0
 Que evolução 😍😍❤️❤️❤️,evoluca,2,2,neutro,0.0,0
-arrasou!!!!❤️❤️❤️,arras,1,0,neutro,0.0,0
-A melhor 😍❤️,melhor,2,1,neutro,0.0,1
+arrasou!!!!❤️❤️❤️,arras,1,0,negativo,-0.2,0
+A melhor 😍❤️,melhor,2,1,positivo,1.0,1
 Meu orgulho ❤️,orgulh,2,0,neutro,0.0,0
-"Lindaa, eu fui eu tava, morro de orgulho de você amiga😍😍😍😍",linda tav morr orgulh voc amig,11,4,neutro,0.0,0
-A melhor de todas❤️,melhor tod,4,0,neutro,0.0,1
-A melhor esteticista ❤️❤️,melhor estetic,3,0,neutro,0.0,1
-Esqueceu de falar que é  A MELHOR ESTETICISTA DESSE MUNDO ❤️❤️,esquec fal melhor estetic dess mund,10,0,neutro,0.0,1
-Princesa demais. Feliz que te conheci pela estética. Você arrasa ❤️❤️,princes demal feliz conhec este voc arras,10,0,neutro,0.0,0
-Linda! Que Deus continue te abençoando 😍😍😍,lind deu continu abenco,6,3,neutro,0.0,0
-Arrasa demais!! ❤️,arras demal,2,0,neutro,0.0,0
-Feliz dia para a maior que temosssss 🔥🔥🔥❤️,feliz dia mai temossss,7,3,neutro,0.0,2
-Você é a melhor esteticista desse mundo ❤️❤️❤️❤️,voc melhor estetic dess mund,7,0,neutro,0.0,1
+"Lindaa, eu fui eu tava, morro de orgulho de você amiga😍😍😍😍",linda tav morr orgulh voc amig,11,4,positivo,0.8,0
+A melhor de todas❤️,melhor tod,4,0,positivo,1.0,1
+A melhor esteticista ❤️❤️,melhor estetic,3,0,positivo,1.0,1
+Esqueceu de falar que é  A MELHOR ESTETICISTA DESSE MUNDO ❤️❤️,esquec fal melhor estetic dess mund,10,0,positivo,1.0,1
+Princesa demais. Feliz que te conheci pela estética. Você arrasa ❤️❤️,princes demal feliz conhec este voc arras,10,0,positivo,0.5,0
+Linda! Que Deus continue te abençoando 😍😍😍,lind deu continu abenco,6,3,positivo,1.0,0
+Arrasa demais!! ❤️,arras demal,2,0,positivo,0.3125,0
+Feliz dia para a maior que temosssss 🔥🔥🔥❤️,feliz dia mai temossss,7,3,positivo,0.9,2
+Você é a melhor esteticista desse mundo ❤️❤️❤️❤️,voc melhor estetic dess mund,7,0,positivo,1.0,1
 Parabéns amiga❤️❤️❤️❤️,parab amig,2,0,neutro,0.0,0
 Parabéns 😍,parab,1,1,neutro,0.0,0
-Feliz dia 😍,feliz dia,2,1,neutro,0.0,2
-Parabéns ❤️ todo sucesso do mundo 🔥🔥🔥👏👏,parab tod sucess mund,5,5,neutro,0.0,0
-Parabénssss amiga você e maravilhosaaaaa,parabensss amig voc maravilhosaaaa,5,0,neutro,0.0,0
+Feliz dia 😍,feliz dia,2,1,positivo,0.8,2
+Parabéns ❤️ todo sucesso do mundo 🔥🔥🔥👏👏,parab tod sucess mund,5,5,positivo,0.3,0
+Parabénssss amiga você e maravilhosaaaaa,parabensss amig voc maravilhosaaaa,5,0,positivo,1.0,0
 Parabéns para nós 😍❤️,parab,3,1,neutro,0.0,0
-"Feliz dia pra melhor, seu trabalho é incrível ❤️❤️",feliz dia melhor trabalh incri,8,0,neutro,0.0,2
-Melhor design 😍😍,melhor design,2,2,neutro,0.0,1
-"Parabéns meu anjo, que Deus continue te abençoando cada vez mais! Todo sucesso do mundo ❤️🎊🎊🎊🎊🎊😍",parab anj deu continu abenco cad vez tod sucess mund,15,6,neutro,0.0,0
+"Feliz dia pra melhor, seu trabalho é incrível ❤️❤️",feliz dia melhor trabalh incri,8,0,positivo,0.9,2
+Melhor design 😍😍,melhor design,2,2,positivo,1.0,1
+"Parabéns meu anjo, que Deus continue te abençoando cada vez mais! Todo sucesso do mundo ❤️🎊🎊🎊🎊🎊😍",parab anj deu continu abenco cad vez tod sucess mund,15,6,positivo,0.47500000000000003,0
 Preciso ir conhecer 😍,precis conhec,3,1,neutro,0.0,0
-Que linda 😍😍😍 que Deus abençoe vc cada dia mais e mais❤️,lind deu abenco cad dia,11,3,neutro,0.0,0
-Muito sucesso lindeza!! Deus abençoe essa nova fase!! 🙌🙌🙌🙌🙌,sucess lind deu abenco nov fas,8,5,neutro,0.0,0
+Que linda 😍😍😍 que Deus abençoe vc cada dia mais e mais❤️,lind deu abenco cad dia,11,3,positivo,0.6166666666666667,0
+Muito sucesso lindeza!! Deus abençoe essa nova fase!! 🙌🙌🙌🙌🙌,sucess lind deu abenco nov fas,8,5,positivo,0.3409090909090909,0
 😍😍😍😍 tudoooo!!,tudooo,1,4,neutro,0.0,0
 Ja querooooo🔥🔥🔥,queroooo,2,3,neutro,0.0,0
 😍😍😍😍😍,,0,5,neutro,0.0,-1
-Resultado ótimo!! Parabéns!!,result otim parab,3,0,neutro,0.0,0
-"Vc é maravilhosa, amei as dicas ❤️",maravilh ame dic,6,0,neutro,0.0,0
-Amei as dicas 😍😍,ame dic,3,2,neutro,0.0,0
+Resultado ótimo!! Parabéns!!,result otim parab,3,0,positivo,1.0,0
+"Vc é maravilhosa, amei as dicas ❤️",maravilh ame dic,6,0,positivo,0.85,0
+Amei as dicas 😍😍,ame dic,3,2,positivo,0.7,0
 😍😍😍😍😍,,0,5,neutro,0.0,-1
-Eu amoooo!!! Time enzimas🙋🙋🙋🙋✨‍♀️💉 o resultado é sensacional😍,amooo tim enz result sensac,8,6,neutro,0.0,0
+Eu amoooo!!! Time enzimas🙋🙋🙋🙋✨‍♀️💉 o resultado é sensacional😍,amooo tim enz result sensac,8,6,positivo,0.9765625,0
 Uauuuu😍😍😍👏👏👏👏,uauuuu,1,7,neutro,0.0,0
-😍❤️ feliz dia,feliz dia,2,1,neutro,0.0,2
-Feliz dia para você maravilhosa 😍❤️,feliz dia voc maravilh,5,1,neutro,0.0,2
-Incrível seu trabalho 😍,incri trabalh,3,1,neutro,0.0,0
-Ameeeei demais 😍 você arrasa ❤️,ameee demal voc arras,4,1,neutro,0.0,0
+😍❤️ feliz dia,feliz dia,2,1,positivo,0.8,2
+Feliz dia para você maravilhosa 😍❤️,feliz dia voc maravilh,5,1,positivo,0.9,2
+Incrível seu trabalho 😍,incri trabalh,3,1,positivo,0.9,0
+Ameeeei demais 😍 você arrasa ❤️,ameee demal voc arras,4,1,positivo,0.44999999999999996,0

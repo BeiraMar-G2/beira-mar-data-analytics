@@ -870,65 +870,61 @@ with tab4:
     
     with col1:
         # Impacto da Temperatura
-        if 'CLASSIFICACAO_TEMP' in df_filtered.columns:
-            # Mapeamento de labels do CSV para labels amigáveis
-            label_map = {
-                'FRIO': 'Frio (menor que 17º)',
-                'AGRADAVEL': 'Agradável (Entre 17º e 24º)',
-                'QUENTE': 'Quente (Entre 24º e 30º)',
-                'MUITO_QUENTE': 'Muito Quente (Maior que 30º)'
-            }
-            
-            # Ordem das categorias
-            temp_ordem_csv = ['FRIO', 'AGRADAVEL', 'QUENTE', 'MUITO_QUENTE']
-            
-            # Cores gradiente: Vermelho -> Azul (gradiente suave estilo RdBu)
-            # Frio (Vermelho) -> Agradável (Laranja) -> Quente (Azul Claro) -> M. Quente (Azul Escuro)
-            colors_temp = ['#4575b4', '#abd9e9', '#fdae61', '#d73027']
+        if 'CLASSIFICACAO_TEMP' in df_filtered.columns or 'TEMP_AR_C' in df_filtered.columns:
+            # Criar classificação se não existir
+            if 'CLASSIFICACAO_TEMP' not in df_filtered.columns:
+                df_filtered['CLASSIFICACAO_TEMP'] = pd.cut(
+                    df_filtered['TEMP_AR_C'],
+                    bins=[-float('inf'), 17, 24, 30, float('inf')],
+                    labels=['Frio (<17°)', 'Agradável (17-24°)', 'Quente (24-30°)', 'Muito Quente (>30°)']
+                )
             
             temp_noshow = df_filtered.groupby('CLASSIFICACAO_TEMP')['NO-SHOW'].agg(['mean', 'count']).reset_index()
             temp_noshow['mean'] = temp_noshow['mean'] * 100
             
-            # Mapear labels
-            temp_noshow['LABEL'] = temp_noshow['CLASSIFICACAO_TEMP'].map(label_map)
+            # Ordenar por valor (decrescente)
+            temp_noshow = temp_noshow.sort_values('mean', ascending=False)
             
-            # Ordenar
-            temp_noshow['CLASSIFICACAO_TEMP'] = pd.Categorical(
-                temp_noshow['CLASSIFICACAO_TEMP'],
-                categories=temp_ordem_csv,
-                ordered=True
-            )
-            temp_noshow = temp_noshow.sort_values('CLASSIFICACAO_TEMP')
+            # Mapeamento de Cores por Temperatura (Mais Quente = Mais Vermelho)
+            # Definindo cores hexadecimais para garantir o gradiente solicitado
+            color_temp_map = {
+                'Muito Quente (>30°)': '#ff0000',  # Vermelho Puro
+                'Quente (24-30°)': '#ff6b6b',      # Vermelho Claro/Salmão
+                'Agradável (17-24°)': '#48dbfb',   # Azul Claro
+                'Frio (<17°)': '#0097e6'           # Azul Escuro
+            }
             
-            # Criar mapeamento de cores baseado na ordem
-            color_map = dict(zip(temp_ordem_csv, colors_temp))
-            bar_colors = [color_map.get(cat, '#808080') for cat in temp_noshow['CLASSIFICACAO_TEMP']]
+            # Criar lista de cores baseada nas categorias atuais
+            bar_colors = [color_temp_map.get(cat, '#bdc3c7') for cat in temp_noshow['CLASSIFICACAO_TEMP']]
             
             fig_temp = go.Figure(data=[
                 go.Bar(
-                    x=temp_noshow['LABEL'],
+                    x=temp_noshow['CLASSIFICACAO_TEMP'].astype(str),
                     y=temp_noshow['mean'],
                     marker=dict(
-                        color=bar_colors,
-                        line=dict(color='rgba(0,0,0,0.1)', width=1) # Adicionei uma borda sutil
+                        color=bar_colors,  # Aplica o mapeamento de cores
+                        line=dict(color='black', width=1)
                     ),
-                    text=temp_noshow['mean'].round(1),
-                    textposition='auto',
-                    texttemplate='%{text}%',
+                    text=temp_noshow['mean'].round(1).astype(str) + '%',
+                    textposition='outside',
                     hovertemplate='<b>%{x}</b><br>Taxa: %{y:.1f}%<br>Total: %{customdata:,}<extra></extra>',
                     customdata=temp_noshow['count']
                 )
             ])
             fig_temp.update_layout(
-                title=dict(text="Impacto da Temperatura em No-Shows (%)", font=dict(size=16)),
-                xaxis_title="Classificação de Temperatura",
+                title=dict(
+                    text="Taxa de No-Show por Classificação de Temperatura",
+                    font=dict(size=14, color='white')  # Título em branco solicitado
+                ),
+                xaxis_title="",
                 yaxis_title="Taxa de No-Show (%)",
-                height=450
+                height=450,
+                xaxis=dict(tickangle=-45)
             )
             st.plotly_chart(fig_temp, use_container_width=True)
         else:
-            st.warning("⚠️ Dados de temperatura não disponíveis (coluna CLASSIFICACAO_TEMP não encontrada)")
-            
+            st.warning("⚠️ Dados de temperatura não disponíveis")
+    
     with col2:
         # Taxa de No-Show por Intensidade de Chuva
         if 'INTENSIDADE_CHUVA' in df_filtered.columns or 'PRECIPITACAO_MM' in df_filtered.columns:

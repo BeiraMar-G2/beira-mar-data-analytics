@@ -25,9 +25,9 @@
             5
         ]
     ],
-    "sentimento_positivo_pct": 0.0,
-    "sentimento_negativo_pct": 0.0,
-    "sentimento_neutro_pct": 100.0,
+    "sentimento_positivo_pct": 62.5,
+    "sentimento_negativo_pct": 1.7857142857142856,
+    "sentimento_neutro_pct": 35.714285714285715,
     "top_10_termos_tfidf": [
         "abenco",
         "ame",
