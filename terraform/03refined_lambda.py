@@ -147,6 +147,12 @@ def lambda_handler(event, context):
     try:
         print(f"\n📖 Lendo dados do bucket TRUSTED...")
         df_med = ler_csv_do_s3(bucket_trusted, CHAVE_MED_TRUSTED)
+        
+        # Filtro para GENDER == 'F'
+        print(f"   🔎 Filtrando dados: GENDER == 'F'")
+        df_med = df_med[df_med['GENDER'] == 'F']
+        print(f"   ✅ {len(df_med)} registros após filtro")
+        
         df_clima = ler_csv_do_s3(bucket_trusted, CHAVE_CLIMA_TRUSTED)
         
     except Exception as e:

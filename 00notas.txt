@@ -11,9 +11,9 @@ arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python312:19
 
 
 Comandos 
+pip install streamlit pandas numpy plotly emoji wordcloud matplotlib
+python3.12 -m streamlit run dashboard.py
 
- python3.12 -m streamlit run dashboard.py
- pip install streamlit pandas numpy plotly emoji wordcloud matplotlib
 
 Feito: 
 Analisar comentários
@@ -23,25 +23,33 @@ Passar relatório de Analytics para estrutura com design melhor + Arrumar grafic
 
 
 Próximos passos:
-Excluir analise_corrigida
+
+
+Criação de relatorio BI com Python e conexão com banco de dados:
+Criar script para definir pacotes e taxa de cancelamento
+
+
+Busca inteligente por clientes que frequentavam a clinica e pararam de ir
+
+
+4 - 
+5 - Criar novas lambdas
+6 - COnfigurar grafana
+
+
+
+
 Streamlit: 
 Atualizar rodape
 Alterar grafico de sms para barras 
 Mexer nas recomendações e insights
-
-Antes de ir para o raw: Serviços, distribuição
-Alterar dados  publico alvo Trusted -> Refined (tirar genero masculino)
-Criação de relatorio BI com Python e conexão com banco de dados 
-4 - Criar script para definir pacotes e taxa de cancelamento
-5 - Criar novas lambdas
-6 - COnfigurar grafana
-
+Testar na AWS: Alterar dados  publico alvo Trusted -> Refined (tirar genero masculino)
 1 - Dados Não Estruturados: 
 - Alterar cor da barra dos emojis (está quase transparente embaixo)
 - Arrumar analise de sentimento
 - Tentar vincular curtidas com horario do dia
 - Analisar uso de emojis
-
+7 - Colocar botao no streamlit para baixar PDF relatorioa de analytics
 
 
 
