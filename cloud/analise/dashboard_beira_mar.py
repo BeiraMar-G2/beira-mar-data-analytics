@@ -1,9 +1,9 @@
 """
-🏥 DASHBOARD BEIRA-MAR ANALYTICS V2.3
+🏥 DASHBOARD BEIRA-MAR ANALYTICS V2.4
 Dashboard interativo para análise de no-show em clínica de estética
 
 Autor: Beira-Mar Analytics Team
-Data: 2024 - Versão 2.3 (Personalização de Cores)
+Data: 2024 - Versão 2.4 (Gráfico SMS em Barra + Novas Recomendações)
 """
 
 import streamlit as st
@@ -78,7 +78,7 @@ st.markdown("""
 
 # Cores da clínica (turquesa e rosa) e paleta geral
 COLORS = {
-    'primary': '#40E0D0',      # Turquesa
+    'primary': '#40E0D0',       # Turquesa
     'secondary': '#FF69B4',     # Rosa
     'accent': '#20B2AA',        # Turquesa escuro
     'positive': '#2ecc71',      # Verde
@@ -248,7 +248,6 @@ def analisar_sentimento_simples(texto):
     else:
         return 'neutro'
 
-
 # ============================================================
 # SIDEBAR - FILTROS
 # ============================================================
@@ -270,6 +269,22 @@ except FileNotFoundError:
 except Exception as e:
     st.sidebar.error(f"❌ Erro ao carregar dados: {str(e)}")
     st.stop()
+
+# Botão de Download do PDF
+try:
+    with open('Relatorio_Analise_Beira_Mar.pdf', 'rb') as pdf_file:
+        pdf_bytes = pdf_file.read()
+        
+    st.sidebar.download_button(
+        label="📄 Baixar Relatório Completo (PDF)",
+        data=pdf_bytes,
+        file_name="Relatorio_Analise_Beira_Mar.pdf",
+        mime="application/pdf",
+        use_container_width=True,
+        type="primary"
+    )
+except FileNotFoundError:
+    st.sidebar.warning("⚠️ Relatório PDF não encontrado")
 
 # Filtros
 st.sidebar.markdown("---")
@@ -430,25 +445,33 @@ with tab1:
     col1, col2 = st.columns(2)
     
     with col1:
-        # Gráfico de Rosca - Impacto do SMS na Taxa de No-Show
+        # -------------------------------------------------------------------
+        # ALTERAÇÃO SOLICITADA: GRÁFICO DE BARRAS PARA SMS (VERMELHO/VERDE)
+        # -------------------------------------------------------------------
         sms_noshow = df_filtered.groupby('SMS_RECEIVED')['NO-SHOW'].agg(['mean', 'count']).reset_index()
         sms_noshow['mean'] = sms_noshow['mean'] * 100
         sms_labels = ['Sem SMS', 'Com SMS']
         
-        fig_sms = go.Figure(data=[go.Pie(
-            labels=sms_labels,
-            values=sms_noshow['mean'],
-            hole=0.5,
-            marker=dict(colors=[COLORS['negative'], COLORS['positive']]),
-            textinfo='label+percent',
-            textfont=dict(size=14),
-            hovertemplate='<b>%{label}</b><br>Taxa de No-Show: %{value:.1f}%<br>Total: %{customdata:,}<extra></extra>',
-            customdata=sms_noshow['count']
-        )])
+        # Definição de Cores: Sem SMS (0) = Vermelho, Com SMS (1) = Verde
+        bar_colors = [COLORS['negative'], COLORS['positive']]
+        
+        fig_sms = go.Figure(data=[
+            go.Bar(
+                x=sms_labels,
+                y=sms_noshow['mean'],
+                marker_color=bar_colors,
+                text=sms_noshow['mean'].round(1),
+                textposition='auto',
+                texttemplate='%{text}%',
+                hovertemplate='<b>%{x}</b><br>Taxa de No-Show: %{y:.1f}%<br>Total: %{customdata:,}<extra></extra>',
+                customdata=sms_noshow['count']
+            )
+        ])
         fig_sms.update_layout(
             title=dict(text="Impacto do SMS na Taxa de No-Show", font=dict(size=16)),
-            height=400,
-            annotations=[dict(text='No-Show<br>Rate', x=0.5, y=0.5, font_size=14, showarrow=False)]
+            xaxis_title="Recebimento de SMS",
+            yaxis_title="Taxa de No-Show (%)",
+            height=400
         )
         st.plotly_chart(fig_sms, use_container_width=True)
         
@@ -549,19 +572,8 @@ with tab1:
     antec_noshow['mean'] = antec_noshow['mean'] * 100
     
     # Configuração de Cores: Gradiente padrão + Vermelho nas duas últimas barras
-    # COLORS['gradient'] tem 5 cores. O gráfico tem 7 barras.
-    # As barras são: 0, 1, 2, 3, 4, 5, 6
-    # 0-4: Usam o gradiente (Teal -> Pink)
-    # 5-6: Usam Vermelho
-    
-    # Lista base (5 cores)
     base_colors = COLORS['gradient']
-    
-    # Adicionando vermelho para as duas últimas barras
-    # Usando um vermelho agradável (#ff5252) que combina bem com o rosa (#FF69B4)
     custom_colors = base_colors + ['#ff5252', '#d32f2f'] 
-    
-    # Garantir que temos cores suficientes mesmo se faltarem barras nos dados
     final_colors = custom_colors[:len(antec_noshow)]
     
     fig_antec = go.Figure(data=[
@@ -605,7 +617,6 @@ with tab2:
             x=service_noshow_filtered['mean'],
             orientation='h',
             # Gradiente de Verde (baixo no-show) para Vermelho (alto no-show)
-            # RdYlGn_r: Red (High) -> Green (Low) invertido
             marker=dict(
                 color=service_noshow_filtered['mean'],
                 colorscale='RdYlGn_r', 
@@ -1040,25 +1051,27 @@ if insights:
 # Recomendações
 st.subheader("🎯 Recomendações Estratégicas")
 
+# -------------------------------------------------------------------
+# ALTERAÇÃO SOLICITADA: ATUALIZAÇÃO DOS TEXTOS DE RECOMENDAÇÃO
+# -------------------------------------------------------------------
 col1, col2 = st.columns(2)
 
 with col1:
-    st.markdown("""
-    **🚀 Ações Imediatas:**
-    1. ✅ Implementar envio automático de SMS para 100% dos agendamentos
-    2. 📞 Criar protocolo de confirmação para agendamentos com mais de 7 dias de antecedência
-    3. 🎯 Focar estratégias de retenção em faixas etárias problemáticas
-    4. 💰 Revisar política de cancelamento para serviços de baixo valor
-    """)
+        st.markdown("""
+        **🚀 Ações Imediatas:**
+        1. ✅ Implementar envio automático de SMS para 100% dos agendamentos
+        2. 💰 Adicionar taxa de cancelamento dinamica (serviços mais baratos com taxa maior de cancelamento)
+        3. 🎯 Focar estratégias de retenção em faixas etárias problemáticas
+        """)
 
 with col2:
-    st.markdown("""
-    **📊 Análises Futuras:**
-    1. 🤖 Desenvolver modelo preditivo de no-show
-    2. 📱 Testar diferentes formatos de lembretes (WhatsApp, Email)
-    3. 🌡️ Considerar clima ao sugerir reagendamentos
-    4. 📈 Implementar sistema de pontuação de risco
-    """)
+        st.markdown("""
+        **📊 Análises Futuras:**
+        1. 📱 Testar diferentes formatos de lembretes (WhatsApp, Email)
+        2. 🌡️ Considerar clima ao sugerir reagendamentos
+        3. 📈 Implementar sistema de pontuação de risco
+        """)
+
 
 # ============================================================
 # RODAPÉ

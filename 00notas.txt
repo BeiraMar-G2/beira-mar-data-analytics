@@ -20,16 +20,23 @@ Analisar comentários
 - Arrumar gráfico com emojis
 - Alterar diagramação de palavras (deixar palavras completas, não cortadas)
 Passar relatório de Analytics para estrutura com design melhor + Arrumar grafico de  pizza em relatorio (Gustavo)
+Criação de relatorio BI com Python e conexão com banco de dados:
+
 
 
 Próximos passos:
+1 - Atualizar rodape
+2 Alterar grafico de sms para barras 
+3 Mexer nas recomendações e insights
+4 Rodar Streamlit na EC2
 
+Relatorio: 
+5 Arrumar velocimetros
+6 Arrumar texto e recomentações
+7 Criar script para definir pacotes e taxa de cancelamento
 
-Criação de relatorio BI com Python e conexão com banco de dados:
-Criar script para definir pacotes e taxa de cancelamento
+Revisar relatorio de Analitycs
 
-
-Busca inteligente por clientes que frequentavam a clinica e pararam de ir
 
 
 4 - 
@@ -40,9 +47,6 @@ Busca inteligente por clientes que frequentavam a clinica e pararam de ir
 
 
 Streamlit: 
-Atualizar rodape
-Alterar grafico de sms para barras 
-Mexer nas recomendações e insights
 Testar na AWS: Alterar dados  publico alvo Trusted -> Refined (tirar genero masculino)
 1 - Dados Não Estruturados: 
 - Alterar cor da barra dos emojis (está quase transparente embaixo)

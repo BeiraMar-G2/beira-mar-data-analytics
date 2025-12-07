@@ -506,6 +506,21 @@ INSERT INTO agendamento (fk_servico, fk_cliente, fk_funcionario, dt_hora, valor_
 (5, 4, 1, '2025-12-04 08:00:00', 180.00, 'Agendado', 'Agendado', NULL, NULL),
 (11, 43, 1, '2025-12-04 15:00:00', 90.00, 'Agendado', 'Agendado', NULL, NULL);
 
+-- 1. Agendamento para HOJE (07/12/2025) - Testar listaConsultasHoje
+-- Cliente: Paula Teixeira (ID 15) | Serviço: Limpeza de Pele (ID 6 - R$ 150)
+INSERT INTO agendamento (fk_servico, fk_cliente, fk_funcionario, dt_hora, valor_pago, status_agendamento, status, dt_validade, fk_pacote) 
+VALUES (6, 15, 1, '2025-12-07 14:00:00', 150.00, 'Agendado', 'Agendado', NULL, NULL);
+
+-- 2. Agendamento para AMANHÃ (08/12/2025) - Testar listaConsultasAmanha
+-- Cliente: Vanessa Correia (ID 25) | Serviço: Massagem Modeladora (ID 1 - R$ 90)
+INSERT INTO agendamento (fk_servico, fk_cliente, fk_funcionario, dt_hora, valor_pago, status_agendamento, status, dt_validade, fk_pacote) 
+VALUES (1, 25, 1, '2025-12-08 10:30:00', 90.00, 'Agendado', 'Agendado', NULL, NULL);
+
+-- 3. Agendamento para DEPOIS DE AMANHÃ (09/12/2025) - Não deve aparecer nas listas (Filtro de data)
+-- Cliente: Dolores Cunha (ID 33) | Serviço: Hidrolipo NA (ID 3 - R$ 180)
+INSERT INTO agendamento (fk_servico, fk_cliente, fk_funcionario, dt_hora, valor_pago, status_agendamento, status, dt_validade, fk_pacote) 
+VALUES (3, 33, 1, '2025-12-09 09:00:00', 180.00, 'Agendado', 'Agendado', NULL, NULL);
+
 -- ============================================================================
 -- QUERIES DE VALIDAÇÃO
 -- ============================================================================

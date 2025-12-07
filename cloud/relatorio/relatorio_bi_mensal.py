@@ -27,7 +27,7 @@ import warnings
 warnings.filterwarnings('ignore')
 
 # ============================================================================
-# CONFIGURAÇÕES DE CORES E ESTILO DA CLÍNICA BEIRA-MAR
+# CONFIGURAÇÕES DE CORES E ESTILO (VISUAL ATUALIZADO)
 # ============================================================================
 
 # Paleta de cores oficial da clínica
@@ -42,27 +42,30 @@ CORES = {
     'cinza': '#95A5A6',
     'cinza_escuro': '#34495E',
     'branco': '#FFFFFF',
-    'preto': '#2C3E50'
+    'preto': '#2C3E50',
+    'fundo_card': '#F8F9FA', 
+    'grid': '#E6E6E6'
 }
 
-# Gradiente de cores para gráficos
-GRADIENTE_TURQUESA = ['#E0FFFF', '#AFEEEE', '#7FFFD4', '#40E0D0', '#20B2AA', '#008B8B']
-GRADIENTE_ROSA = ['#FFF0F5', '#FFB6C1', '#FF69B4', '#FF1493', '#C71585']
-
-# Configurações globais do matplotlib
+# Configurações globais do matplotlib (ESTILO FORMAL)
 plt.rcParams['font.family'] = 'DejaVu Sans'
 plt.rcParams['font.size'] = 10
 plt.rcParams['axes.titlesize'] = 14
-plt.rcParams['axes.labelsize'] = 11
+plt.rcParams['axes.labelsize'] = 10
 plt.rcParams['xtick.labelsize'] = 9
 plt.rcParams['ytick.labelsize'] = 9
 plt.rcParams['figure.facecolor'] = 'white'
-plt.rcParams['axes.facecolor'] = '#FAFAFA'
-plt.rcParams['axes.edgecolor'] = '#CCCCCC'
+plt.rcParams['axes.facecolor'] = 'white'
+plt.rcParams['axes.edgecolor'] = '#DDDDDD'
 plt.rcParams['axes.grid'] = True
-plt.rcParams['grid.alpha'] = 0.3
+plt.rcParams['grid.alpha'] = 0.5
+plt.rcParams['grid.color'] = CORES['grid']
+plt.rcParams['grid.linestyle'] = '--'
 
-# Tentar configurar locale para português
+# Tamanho A4 Paisagem fixo
+A4_SIZE = (11.69, 8.27)
+
+# Tentar configurar locale
 try:
     locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
 except:
@@ -111,39 +114,51 @@ def get_dia_semana(dia):
     }
     return dias.get(dia, '')
 
-def criar_kpi_card(ax, titulo, valor, subtitulo="", cor=CORES['turquesa'], icone=""):
-    """Cria um card visual para KPI"""
+def limpar_estilo_grafico(ax):
+    """Remove bordas desnecessárias para visual mais limpo"""
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_color('#DDDDDD')
+    ax.spines['bottom'].set_color('#DDDDDD')
+    ax.tick_params(colors='#666666')
+    ax.yaxis.label.set_color('#444444')
+    ax.xaxis.label.set_color('#444444')
+    ax.title.set_color('#333333')
+
+def criar_kpi_card(ax, titulo, valor, subtitulo="", cor=CORES['turquesa']):
+    """Cria um card visual para KPI - DESIGN CLEAN"""
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
     ax.axis('off')
     
     # Fundo do card
     card = mpatches.FancyBboxPatch(
-        (0.02, 0.02), 0.96, 0.96,
+        (0.05, 0.05), 0.90, 0.90,
         boxstyle="round,pad=0.02,rounding_size=0.05",
-        facecolor=CORES['branco'],
-        edgecolor=cor,
-        linewidth=3
+        facecolor=CORES['fundo_card'],
+        edgecolor='#EEEEEE',
+        linewidth=1
     )
     ax.add_patch(card)
     
-    # Barra superior colorida
-    barra = mpatches.FancyBboxPatch(
-        (0.02, 0.75), 0.96, 0.23,
-        boxstyle="round,pad=0.02,rounding_size=0.05",
+    # Detalhe colorido lateral
+    barra = mpatches.Rectangle(
+        (0.05, 0.05), 0.02, 0.90,
         facecolor=cor,
-        edgecolor=cor
+        edgecolor='none'
     )
     ax.add_patch(barra)
     
     # Textos
-    ax.text(0.5, 0.87, titulo, ha='center', va='center', fontsize=11, 
-            fontweight='bold', color=CORES['branco'])
-    ax.text(0.5, 0.45, str(valor), ha='center', va='center', fontsize=24, 
+    ax.text(0.12, 0.80, titulo.upper(), ha='left', va='center', fontsize=9, 
+            fontweight='bold', color=CORES['cinza'])
+    
+    ax.text(0.12, 0.50, str(valor), ha='left', va='center', fontsize=20, 
             fontweight='bold', color=CORES['cinza_escuro'])
+            
     if subtitulo:
-        ax.text(0.5, 0.15, subtitulo, ha='center', va='center', fontsize=9, 
-                color=CORES['cinza'])
+        ax.text(0.12, 0.25, subtitulo, ha='left', va='center', fontsize=8, 
+                color=CORES['cinza'], style='italic')
 
 # ============================================================================
 # CLASSE PRINCIPAL DO RELATÓRIO
@@ -153,16 +168,7 @@ class RelatorioBIBeiraMar:
     """Classe para geração do relatório de BI mensal"""
     
     def __init__(self, ano=None, mes=None, usar_dados_mock=True):
-        """
-        Inicializa o relatório
-        
-        Args:
-            ano: Ano do relatório (default: ano atual)
-            mes: Mês do relatório (default: mês anterior)
-            usar_dados_mock: Se True, usa dados mockados para demo
-        """
         if ano is None or mes is None:
-            # Por padrão, gera relatório do mês anterior
             hoje = datetime.now()
             if mes is None:
                 mes = hoje.month - 1 if hoje.month > 1 else 12
@@ -174,16 +180,11 @@ class RelatorioBIBeiraMar:
         self.usar_dados_mock = usar_dados_mock
         self.data_geracao = datetime.now()
         
-        # DataFrames
         self.df_agendamentos = None
         self.df_servicos = None
-        self.df_clientes = None
-        
-        # KPIs calculados
         self.kpis = {}
         
     def conectar_banco(self):
-        """Estabelece conexão com o banco de dados"""
         try:
             conn = mysql.connector.connect(**DB_CONFIG)
             return conn
@@ -192,8 +193,6 @@ class RelatorioBIBeiraMar:
             return None
     
     def carregar_dados(self):
-        """Carrega os dados do banco de dados"""
-        
         if self.usar_dados_mock:
             print("📊 Carregando dados mockados para demonstração...")
             self._carregar_dados_mock()
@@ -207,7 +206,6 @@ class RelatorioBIBeiraMar:
                 return
             
             try:
-                # Query para agendamentos do mês
                 query_agendamentos = f"""
                 SELECT 
                     a.id_agendamento,
@@ -230,8 +228,6 @@ class RelatorioBIBeiraMar:
                 """
                 
                 self.df_agendamentos = pd.read_sql(query_agendamentos, conn)
-                
-                # Query para serviços
                 query_servicos = "SELECT * FROM servico"
                 self.df_servicos = pd.read_sql(query_servicos, conn)
                 
@@ -244,9 +240,7 @@ class RelatorioBIBeiraMar:
                 self._carregar_dados_mock()
     
     def _carregar_dados_mock(self):
-        """Carrega dados mockados para demonstração"""
-        
-        # Dados de serviços (conforme documentação)
+        # Dados de serviços originais
         self.df_servicos = pd.DataFrame({
             'id_servico': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
             'nome': [
@@ -259,25 +253,18 @@ class RelatorioBIBeiraMar:
             'duracao': [40, 60, 150, 60, 60, 120, 90, 30, 30, 120, 60]
         })
         
-        # Simular agendamentos de novembro 2025 (conforme script SQL)
-        # Esta é uma representação simplificada dos dados mockados
+        # Agendamentos mockados originais
         agendamentos_data = []
-        
-        # Dados baseados no script SQL fornecido
         agendamentos_raw = [
-            # Semana 1: 03-08 de Novembro
-            # Segunda 03/11 - DIA FRACO
             (8, '2025-11-03 09:00:00', 30.00, 'Concluido'),
             (8, '2025-11-03 10:00:00', 30.00, 'Cancelado'),
             (4, '2025-11-03 14:00:00', 100.00, 'Concluido'),
             (2, '2025-11-03 16:00:00', 100.00, 'Concluido'),
-            # Terça 04/11 - DIA FRACO
             (8, '2025-11-04 09:00:00', 30.00, 'Cancelado'),
             (9, '2025-11-04 10:00:00', 35.00, 'Concluido'),
             (1, '2025-11-04 11:00:00', 90.00, 'Concluido'),
             (6, '2025-11-04 14:00:00', 150.00, 'Concluido'),
             (8, '2025-11-04 17:00:00', 30.00, 'Cancelado'),
-            # Quarta 05/11 - DIA BOM
             (3, '2025-11-05 08:00:00', 180.00, 'Concluido'),
             (8, '2025-11-05 09:30:00', 30.00, 'Concluido'),
             (7, '2025-11-05 10:30:00', 45.00, 'Concluido'),
@@ -286,7 +273,6 @@ class RelatorioBIBeiraMar:
             (5, '2025-11-05 15:30:00', 180.00, 'Concluido'),
             (8, '2025-11-05 17:00:00', 30.00, 'Cancelado'),
             (4, '2025-11-05 18:00:00', 100.00, 'Concluido'),
-            # Quinta 06/11 - MELHOR DIA
             (3, '2025-11-06 08:00:00', 180.00, 'Concluido'),
             (1, '2025-11-06 09:00:00', 90.00, 'Concluido'),
             (8, '2025-11-06 10:00:00', 30.00, 'Concluido'),
@@ -297,7 +283,6 @@ class RelatorioBIBeiraMar:
             (11, '2025-11-06 17:00:00', 90.00, 'Concluido'),
             (8, '2025-11-06 18:00:00', 30.00, 'Cancelado'),
             (4, '2025-11-06 19:00:00', 100.00, 'Concluido'),
-            # Sexta 07/11 - DIA BOM
             (8, '2025-11-07 09:00:00', 30.00, 'Concluido'),
             (9, '2025-11-07 10:00:00', 35.00, 'Concluido'),
             (1, '2025-11-07 11:00:00', 90.00, 'Concluido'),
@@ -306,7 +291,6 @@ class RelatorioBIBeiraMar:
             (8, '2025-11-07 16:00:00', 30.00, 'Cancelado'),
             (7, '2025-11-07 17:00:00', 45.00, 'Concluido'),
             (4, '2025-11-07 18:30:00', 100.00, 'Concluido'),
-            # Sábado 08/11 - ALTA DEMANDA
             (8, '2025-11-08 08:00:00', 30.00, 'Cancelado'),
             (8, '2025-11-08 09:00:00', 30.00, 'Concluido'),
             (7, '2025-11-08 10:00:00', 45.00, 'Concluido'),
@@ -319,17 +303,13 @@ class RelatorioBIBeiraMar:
             (11, '2025-11-08 18:00:00', 90.00, 'Concluido'),
             (4, '2025-11-08 19:00:00', 100.00, 'Cancelado'),
             (5, '2025-11-08 20:00:00', 180.00, 'Concluido'),
-            # Semana 2: 10-15 de Novembro
-            # Segunda 10/11
             (8, '2025-11-10 09:00:00', 30.00, 'Concluido'),
             (4, '2025-11-10 14:00:00', 100.00, 'Concluido'),
             (8, '2025-11-10 16:00:00', 30.00, 'Cancelado'),
-            # Terça 11/11
             (2, '2025-11-11 10:00:00', 100.00, 'Concluido'),
             (8, '2025-11-11 11:00:00', 30.00, 'Cancelado'),
             (9, '2025-11-11 14:00:00', 35.00, 'Concluido'),
             (1, '2025-11-11 16:00:00', 90.00, 'Concluido'),
-            # Quarta 12/11
             (3, '2025-11-12 08:00:00', 180.00, 'Concluido'),
             (8, '2025-11-12 09:30:00', 30.00, 'Concluido'),
             (7, '2025-11-12 10:30:00', 45.00, 'Concluido'),
@@ -337,7 +317,6 @@ class RelatorioBIBeiraMar:
             (2, '2025-11-12 14:00:00', 100.00, 'Concluido'),
             (10, '2025-11-12 15:30:00', 150.00, 'Concluido'),
             (8, '2025-11-12 17:00:00', 30.00, 'Cancelado'),
-            # Quinta 13/11
             (3, '2025-11-13 08:00:00', 180.00, 'Concluido'),
             (1, '2025-11-13 09:00:00', 90.00, 'Concluido'),
             (8, '2025-11-13 10:00:00', 30.00, 'Concluido'),
@@ -347,7 +326,6 @@ class RelatorioBIBeiraMar:
             (11, '2025-11-13 15:30:00', 90.00, 'Concluido'),
             (4, '2025-11-13 17:00:00', 100.00, 'Concluido'),
             (8, '2025-11-13 18:00:00', 30.00, 'Concluido'),
-            # Sexta 14/11
             (8, '2025-11-14 09:00:00', 30.00, 'Concluido'),
             (9, '2025-11-14 10:00:00', 35.00, 'Concluido'),
             (1, '2025-11-14 11:00:00', 90.00, 'Concluido'),
@@ -355,25 +333,19 @@ class RelatorioBIBeiraMar:
             (6, '2025-11-14 14:00:00', 150.00, 'Concluido'),
             (8, '2025-11-14 16:00:00', 30.00, 'Cancelado'),
             (2, '2025-11-14 17:00:00', 100.00, 'Concluido'),
-            # Sábado 15/11 - FERIADO (sem agendamentos)
-            # Semana 3: 17-22 de Novembro
-            # Segunda 17/11
             (8, '2025-11-17 10:00:00', 30.00, 'Cancelado'),
             (4, '2025-11-17 14:00:00', 100.00, 'Concluido'),
             (2, '2025-11-17 16:00:00', 100.00, 'Concluido'),
-            # Terça 18/11
             (8, '2025-11-18 09:00:00', 30.00, 'Concluido'),
             (9, '2025-11-18 10:00:00', 35.00, 'Cancelado'),
             (1, '2025-11-18 14:00:00', 90.00, 'Concluido'),
             (7, '2025-11-18 16:00:00', 45.00, 'Concluido'),
-            # Quarta 19/11
             (3, '2025-11-19 08:00:00', 180.00, 'Concluido'),
             (8, '2025-11-19 09:30:00', 30.00, 'Concluido'),
             (6, '2025-11-19 11:00:00', 150.00, 'Concluido'),
             (2, '2025-11-19 14:00:00', 100.00, 'Concluido'),
             (8, '2025-11-19 16:00:00', 30.00, 'Cancelado'),
             (4, '2025-11-19 18:00:00', 100.00, 'Concluido'),
-            # Quinta 20/11 - FERIADO (funcionando)
             (3, '2025-11-20 08:00:00', 180.00, 'Concluido'),
             (8, '2025-11-20 09:00:00', 30.00, 'Concluido'),
             (7, '2025-11-20 10:00:00', 45.00, 'Concluido'),
@@ -384,7 +356,6 @@ class RelatorioBIBeiraMar:
             (11, '2025-11-20 17:00:00', 90.00, 'Concluido'),
             (8, '2025-11-20 18:00:00', 30.00, 'Cancelado'),
             (4, '2025-11-20 19:00:00', 100.00, 'Concluido'),
-            # Sexta 21/11
             (8, '2025-11-21 09:00:00', 30.00, 'Concluido'),
             (9, '2025-11-21 10:00:00', 35.00, 'Concluido'),
             (3, '2025-11-21 11:00:00', 180.00, 'Concluido'),
@@ -392,7 +363,6 @@ class RelatorioBIBeiraMar:
             (2, '2025-11-21 15:00:00', 100.00, 'Concluido'),
             (8, '2025-11-21 16:30:00', 30.00, 'Cancelado'),
             (1, '2025-11-21 17:30:00', 90.00, 'Concluido'),
-            # Sábado 22/11
             (8, '2025-11-22 08:00:00', 30.00, 'Concluido'),
             (7, '2025-11-22 09:00:00', 45.00, 'Concluido'),
             (9, '2025-11-22 10:00:00', 35.00, 'Cancelado'),
@@ -403,21 +373,17 @@ class RelatorioBIBeiraMar:
             (8, '2025-11-22 16:30:00', 30.00, 'Cancelado'),
             (11, '2025-11-22 17:30:00', 90.00, 'Concluido'),
             (5, '2025-11-22 19:00:00', 180.00, 'Concluido'),
-            # Semana 4: 24-29 de Novembro (Black Friday Week)
-            # Segunda 24/11
             (8, '2025-11-24 09:00:00', 30.00, 'Concluido'),
             (4, '2025-11-24 11:00:00', 100.00, 'Concluido'),
             (2, '2025-11-24 14:00:00', 100.00, 'Concluido'),
             (8, '2025-11-24 15:30:00', 30.00, 'Cancelado'),
             (9, '2025-11-24 17:00:00', 35.00, 'Concluido'),
-            # Terça 25/11
             (1, '2025-11-25 09:00:00', 90.00, 'Concluido'),
             (8, '2025-11-25 10:00:00', 30.00, 'Concluido'),
             (7, '2025-11-25 11:00:00', 45.00, 'Concluido'),
             (3, '2025-11-25 12:00:00', 180.00, 'Concluido'),
             (2, '2025-11-25 14:30:00', 100.00, 'Concluido'),
             (8, '2025-11-25 16:00:00', 30.00, 'Cancelado'),
-            # Quarta 26/11
             (3, '2025-11-26 08:00:00', 180.00, 'Concluido'),
             (8, '2025-11-26 09:30:00', 30.00, 'Concluido'),
             (6, '2025-11-26 10:30:00', 150.00, 'Concluido'),
@@ -426,7 +392,6 @@ class RelatorioBIBeiraMar:
             (2, '2025-11-26 15:30:00', 100.00, 'Concluido'),
             (10, '2025-11-26 17:00:00', 150.00, 'Concluido'),
             (8, '2025-11-26 18:30:00', 30.00, 'Concluido'),
-            # Quinta 27/11 - Véspera Black Friday
             (3, '2025-11-27 08:00:00', 180.00, 'Concluido'),
             (8, '2025-11-27 09:00:00', 30.00, 'Concluido'),
             (7, '2025-11-27 10:00:00', 45.00, 'Concluido'),
@@ -437,7 +402,6 @@ class RelatorioBIBeiraMar:
             (11, '2025-11-27 17:00:00', 90.00, 'Concluido'),
             (4, '2025-11-27 18:00:00', 100.00, 'Concluido'),
             (8, '2025-11-27 19:00:00', 30.00, 'Cancelado'),
-            # Sexta 28/11 - BLACK FRIDAY!
             (3, '2025-11-28 08:00:00', 162.00, 'Concluido'),
             (8, '2025-11-28 09:00:00', 27.00, 'Concluido'),
             (7, '2025-11-28 09:30:00', 40.50, 'Concluido'),
@@ -452,7 +416,6 @@ class RelatorioBIBeiraMar:
             (4, '2025-11-28 18:00:00', 90.00, 'Concluido'),
             (8, '2025-11-28 19:00:00', 27.00, 'Concluido'),
             (3, '2025-11-28 19:30:00', 162.00, 'Concluido'),
-            # Sábado 29/11 - Pós Black Friday
             (8, '2025-11-29 08:00:00', 30.00, 'Concluido'),
             (7, '2025-11-29 09:00:00', 45.00, 'Concluido'),
             (9, '2025-11-29 10:00:00', 35.00, 'Cancelado'),
@@ -462,7 +425,7 @@ class RelatorioBIBeiraMar:
             (2, '2025-11-29 15:30:00', 100.00, 'Concluido'),
             (8, '2025-11-29 16:30:00', 30.00, 'Cancelado'),
             (11, '2025-11-29 17:30:00', 90.00, 'Concluido'),
-            (5, '2025-11-29 19:00:00', 180.00, 'Concluido'),
+            (5, '2025-11-29 19:00:00', 180.00, 'Concluido')
         ]
         
         for i, (servico_id, dt_hora, valor, status) in enumerate(agendamentos_raw, 1):
@@ -486,7 +449,6 @@ class RelatorioBIBeiraMar:
     
     def calcular_kpis(self):
         """Calcula todos os KPIs do relatório"""
-        
         df = self.df_agendamentos.copy()
         
         # KPIs Principais
@@ -503,7 +465,7 @@ class RelatorioBIBeiraMar:
         self.kpis['ticket_medio'] = self.kpis['faturamento'] / self.kpis['concluidos'] if self.kpis['concluidos'] > 0 else 0
         self.kpis['perda_cancelamentos'] = df[df['status'] == 'Cancelado']['valor_pago'].sum()
         
-        # Dias trabalhados (excluindo domingos)
+        # Dias trabalhados
         df['dia_semana'] = df['dt_hora'].dt.dayofweek
         dias_unicos = df['dt_hora'].dt.date.nunique()
         self.kpis['dias_trabalhados'] = dias_unicos
@@ -529,103 +491,83 @@ class RelatorioBIBeiraMar:
             self.kpis['por_servico']['cancelados'] / self.kpis['por_servico']['total'] * 100
         )
         
-        # Análise por semana do mês
+        # Análise por semana
         df['semana'] = df['dt_hora'].dt.isocalendar().week
         self.kpis['por_semana'] = df.groupby('semana').agg({
             'id_agendamento': 'count',
             'valor_pago': lambda x: x[df.loc[x.index, 'status'] == 'Concluido'].sum()
         }).rename(columns={'id_agendamento': 'total', 'valor_pago': 'faturamento'})
         
-        # Horários mais movimentados
+        # Horários
         df['hora'] = df['dt_hora'].dt.hour
         self.kpis['por_hora'] = df.groupby('hora')['id_agendamento'].count()
         
         print("✅ KPIs calculados com sucesso")
     
     def gerar_pagina_capa(self, pdf):
-        """Gera a página de capa do relatório"""
-        
-        fig = plt.figure(figsize=(11.69, 8.27))  # A4 landscape
-        
-        # Fundo
+        """Gera a página de capa - DESIGN CLEAN"""
+        fig = plt.figure(figsize=A4_SIZE)
         ax = fig.add_axes([0, 0, 1, 1])
-        ax.set_xlim(0, 1)
-        ax.set_ylim(0, 1)
         ax.axis('off')
         
-        # Faixa superior turquesa
-        faixa_sup = mpatches.Rectangle((0, 0.65), 1, 0.35, 
+        # Detalhe Lateral
+        faixa_lat = mpatches.Rectangle((0, 0), 0.03, 1, 
                                         facecolor=CORES['turquesa'], 
                                         edgecolor='none')
-        ax.add_patch(faixa_sup)
+        ax.add_patch(faixa_lat)
         
-        # Faixa inferior rosa
-        faixa_inf = mpatches.Rectangle((0, 0), 1, 0.15, 
-                                        facecolor=CORES['rosa'], 
-                                        edgecolor='none')
-        ax.add_patch(faixa_inf)
-        
-        # Título principal
-        ax.text(0.5, 0.82, 'Relatório de Business Intelligence', 
-                ha='center', va='center', fontsize=32, fontweight='bold', 
-                color=CORES['branco'])
+        # Título
+        ax.text(0.1, 0.70, 'Relatório Mensal\nde Performance', 
+                ha='left', va='center', fontsize=40, fontweight='bold', 
+                color=CORES['preto'])
         
         # Subtítulo
-        ax.text(0.5, 0.72, 'Clínica de Estética Beira-Mar', 
-                ha='center', va='center', fontsize=24, 
-                color=CORES['branco'])
+        ax.text(0.1, 0.82, 'CLÍNICA BEIRA-MAR', 
+                ha='left', va='center', fontsize=14, 
+                color=CORES['cinza'])
         
         # Mês/Ano
         nome_mes = get_nome_mes(self.mes)
-        ax.text(0.5, 0.45, f'{nome_mes} {self.ano}', 
-                ha='center', va='center', fontsize=48, fontweight='bold', 
-                color=CORES['turquesa'])
+        ax.text(0.1, 0.55, f'{nome_mes} {self.ano}', 
+                ha='left', va='center', fontsize=24, 
+                color=CORES['turquesa_escuro'])
         
-        # Resumo rápido
-        resumo = f"📊 {self.kpis['total_agendamentos']} agendamentos  •  " \
-                 f"💰 {formatar_moeda(self.kpis['faturamento'])}  •  " \
-                 f"✅ {formatar_percentual(self.kpis['taxa_comparecimento'])} comparecimento"
-        ax.text(0.5, 0.30, resumo, 
-                ha='center', va='center', fontsize=14, 
-                color=CORES['cinza_escuro'])
+        # Resumo
+        resumo_texto = f"Neste mês registramos um faturamento de {formatar_moeda(self.kpis['faturamento'])} " \
+                       f"com {self.kpis['total_agendamentos']} agendamentos.\n" \
+                       f"A taxa de comparecimento foi de {formatar_percentual(self.kpis['taxa_comparecimento'])}."
+        ax.text(0.1, 0.40, resumo_texto, 
+                ha='left', va='top', fontsize=12, color=CORES['cinza_escuro'], wrap=True)
+
+        # Rodapé
+        ax.text(0.95, 0.05, 
+                f"Gerado em {self.data_geracao.strftime('%d/%m/%Y')}", 
+                ha='right', va='center', fontsize=9, 
+                color=CORES['cinza'])
         
-        # Data de geração
-        ax.text(0.5, 0.08, 
-                f"Relatório gerado em {self.data_geracao.strftime('%d/%m/%Y às %H:%M')}", 
-                ha='center', va='center', fontsize=10, 
-                color=CORES['branco'])
-        
-        # Localização
-        ax.text(0.5, 0.04, "Mauá, São Paulo", 
-                ha='center', va='center', fontsize=10, 
-                color=CORES['branco'])
-        
-        pdf.savefig(fig, bbox_inches='tight')
+        pdf.savefig(fig)
         plt.close(fig)
     
     def gerar_pagina_kpis(self, pdf):
-        """Gera a página de KPIs principais"""
+        """Gera a página de KPIs - DESIGN CLEAN"""
+        fig = plt.figure(figsize=A4_SIZE)
+        fig.suptitle('Indicadores Principais', fontsize=20, fontweight='bold', 
+                     color=CORES['cinza_escuro'], x=0.05, ha='left', y=0.95)
         
-        fig = plt.figure(figsize=(11.69, 8.27))
-        fig.suptitle('Indicadores Principais do Mês', fontsize=20, fontweight='bold', 
-                     color=CORES['cinza_escuro'], y=0.98)
-        
-        # Grid de KPIs (2 linhas x 4 colunas)
         gs = fig.add_gridspec(2, 4, hspace=0.3, wspace=0.2, 
-                              left=0.05, right=0.95, top=0.88, bottom=0.1)
+                              left=0.05, right=0.95, top=0.85, bottom=0.1)
         
-        # KPIs
         kpi_data = [
-            ('Total de\nAgendamentos', str(self.kpis['total_agendamentos']), '', CORES['turquesa']),
-            ('Atendimentos\nRealizados', str(self.kpis['concluidos']), 
-             f"{formatar_percentual(self.kpis['taxa_comparecimento'])} comparecimento", CORES['verde']),
+            ('Total Agendamentos', str(self.kpis['total_agendamentos']), '', CORES['turquesa']),
+            ('Atendimentos', str(self.kpis['concluidos']), 
+             f"{formatar_percentual(self.kpis['taxa_comparecimento'])} realizado", CORES['verde']),
             ('Cancelamentos', str(self.kpis['cancelados']), 
-             f"{formatar_percentual(self.kpis['taxa_cancelamento'])} do total", CORES['vermelho']),
-            ('Dias\nTrabalhados', str(self.kpis['dias_trabalhados']), '', CORES['rosa']),
-            ('Faturamento\nTotal', formatar_moeda(self.kpis['faturamento']), '', CORES['turquesa_escuro']),
-            ('Ticket\nMédio', formatar_moeda(self.kpis['ticket_medio']), 'por atendimento', CORES['turquesa']),
-            ('Média\nDiária', formatar_moeda(self.kpis['media_dia']), 'faturamento/dia', CORES['rosa']),
-            ('Perda com\nCancelamentos', formatar_moeda(self.kpis['perda_cancelamentos']), 'potencial perdido', CORES['vermelho']),
+             f"{formatar_percentual(self.kpis['taxa_cancelamento'])} taxa", CORES['vermelho']),
+            ('Dias Úteis', str(self.kpis['dias_trabalhados']), '', CORES['rosa']),
+            ('Faturamento', formatar_moeda(self.kpis['faturamento']), '', CORES['turquesa_escuro']),
+            ('Ticket Médio', formatar_moeda(self.kpis['ticket_medio']), 'por cliente', CORES['turquesa']),
+            ('Média Diária', formatar_moeda(self.kpis['media_dia']), 'receita/dia', CORES['rosa']),
+            ('Perda Estimada', formatar_moeda(self.kpis['perda_cancelamentos']), 'por faltas', CORES['vermelho']),
         ]
         
         for idx, (titulo, valor, subtitulo, cor) in enumerate(kpi_data):
@@ -634,209 +576,154 @@ class RelatorioBIBeiraMar:
             ax = fig.add_subplot(gs[row, col])
             criar_kpi_card(ax, titulo, valor, subtitulo, cor)
         
-        pdf.savefig(fig, bbox_inches='tight')
+        pdf.savefig(fig)
         plt.close(fig)
     
     def gerar_pagina_servicos(self, pdf):
-        """Gera a página de análise por serviços"""
+        """Gera a página de serviços - ESTILO CLEAN"""
+        fig = plt.figure(figsize=A4_SIZE)
+        fig.suptitle('Performance por Serviços', fontsize=20, fontweight='bold', 
+                     color=CORES['cinza_escuro'], x=0.05, ha='left', y=0.95)
         
-        fig = plt.figure(figsize=(11.69, 8.27))
-        fig.suptitle('Análise por Serviços', fontsize=20, fontweight='bold', 
-                     color=CORES['cinza_escuro'], y=0.98)
+        gs = fig.add_gridspec(2, 2, hspace=0.4, wspace=0.3, 
+                              left=0.08, right=0.95, top=0.85, bottom=0.08)
         
-        # Grid 2x2
-        gs = fig.add_gridspec(2, 2, hspace=0.35, wspace=0.25, 
-                              left=0.08, right=0.95, top=0.88, bottom=0.08)
-        
-        # Dados
         df_servicos = self.kpis['por_servico'].sort_values('total', ascending=True)
         
-        # Gráfico 1: Serviços mais procurados (Top 10)
+        # Gráfico 1
         ax1 = fig.add_subplot(gs[0, 0])
+        limpar_estilo_grafico(ax1)
         top_servicos = df_servicos.tail(10)
-        cores_barras = [CORES['turquesa'] if i < 7 else CORES['turquesa_escuro'] 
-                        for i in range(len(top_servicos))]
-        bars = ax1.barh(range(len(top_servicos)), top_servicos['total'], color=cores_barras)
+        cores_barras = [CORES['turquesa'] if i < 7 else CORES['turquesa_escuro'] for i in range(len(top_servicos))]
+        bars = ax1.barh(range(len(top_servicos)), top_servicos['total'], color=cores_barras, alpha=0.8)
         ax1.set_yticks(range(len(top_servicos)))
-        ax1.set_yticklabels([nome[:25] + '...' if len(nome) > 25 else nome 
-                            for nome in top_servicos.index], fontsize=8)
-        ax1.set_xlabel('Quantidade de Agendamentos')
-        ax1.set_title('🏆 Serviços Mais Procurados', fontweight='bold', pad=10)
-        
-        # Adicionar valores nas barras
+        ax1.set_yticklabels([nome[:25] + '...' if len(nome) > 25 else nome for nome in top_servicos.index], fontsize=8)
+        ax1.set_title('Volume de Agendamentos', fontweight='bold', pad=10, loc='left')
         for bar, val in zip(bars, top_servicos['total']):
-            ax1.text(bar.get_width() + 0.3, bar.get_y() + bar.get_height()/2, 
-                    str(int(val)), va='center', fontsize=8)
+            ax1.text(bar.get_width() + 0.3, bar.get_y() + bar.get_height()/2, str(int(val)), va='center', fontsize=8)
         
-        # Gráfico 2: Faturamento por serviço
+        # Gráfico 2
         ax2 = fig.add_subplot(gs[0, 1])
+        limpar_estilo_grafico(ax2)
         top_fat = df_servicos.sort_values('faturamento', ascending=True).tail(10)
         cores_fat = [CORES['verde'] for _ in range(len(top_fat))]
-        bars2 = ax2.barh(range(len(top_fat)), top_fat['faturamento'], color=cores_fat)
+        bars2 = ax2.barh(range(len(top_fat)), top_fat['faturamento'], color=cores_fat, alpha=0.7)
         ax2.set_yticks(range(len(top_fat)))
-        ax2.set_yticklabels([nome[:25] + '...' if len(nome) > 25 else nome 
-                            for nome in top_fat.index], fontsize=8)
-        ax2.set_xlabel('Faturamento (R$)')
-        ax2.set_title('💰 Faturamento por Serviço', fontweight='bold', pad=10)
-        
+        ax2.set_yticklabels([nome[:25] + '...' if len(nome) > 25 else nome for nome in top_fat.index], fontsize=8)
+        ax2.set_title('Receita Gerada (Top 10)', fontweight='bold', pad=10, loc='left')
         for bar, val in zip(bars2, top_fat['faturamento']):
-            ax2.text(bar.get_width() + 20, bar.get_y() + bar.get_height()/2, 
-                    formatar_moeda(val), va='center', fontsize=7)
+            ax2.text(bar.get_width() + 20, bar.get_y() + bar.get_height()/2, formatar_moeda(val), va='center', fontsize=7)
         
-        # Gráfico 3: Taxa de cancelamento por serviço
+        # Gráfico 3
         ax3 = fig.add_subplot(gs[1, 0])
+        limpar_estilo_grafico(ax3)
         df_cancel = df_servicos[df_servicos['cancelados'] > 0].sort_values('taxa_cancelamento', ascending=True)
-        cores_cancel = [CORES['amarelo'] if v < 20 else CORES['vermelho'] 
-                       for v in df_cancel['taxa_cancelamento']]
-        bars3 = ax3.barh(range(len(df_cancel)), df_cancel['taxa_cancelamento'], color=cores_cancel)
+        cores_cancel = [CORES['amarelo'] if v < 20 else CORES['vermelho'] for v in df_cancel['taxa_cancelamento']]
+        bars3 = ax3.barh(range(len(df_cancel)), df_cancel['taxa_cancelamento'], color=cores_cancel, alpha=0.7)
         ax3.set_yticks(range(len(df_cancel)))
-        ax3.set_yticklabels([nome[:25] + '...' if len(nome) > 25 else nome 
-                            for nome in df_cancel.index], fontsize=8)
-        ax3.set_xlabel('Taxa de Cancelamento (%)')
-        ax3.set_title('⚠️ Taxa de Cancelamento por Serviço', fontweight='bold', pad=10)
-        ax3.axvline(x=20, color=CORES['vermelho'], linestyle='--', alpha=0.5, label='Meta: 20%')
-        ax3.legend(loc='lower right', fontsize=8)
-        
+        ax3.set_yticklabels([nome[:25] + '...' if len(nome) > 25 else nome for nome in df_cancel.index], fontsize=8)
+        ax3.set_title('Taxa de Cancelamento (%)', fontweight='bold', pad=10, loc='left')
+        ax3.axvline(x=20, color=CORES['cinza'], linestyle='--', alpha=0.5)
         for bar, val in zip(bars3, df_cancel['taxa_cancelamento']):
-            ax3.text(bar.get_width() + 0.5, bar.get_y() + bar.get_height()/2, 
-                    f'{val:.1f}%', va='center', fontsize=8)
+            ax3.text(bar.get_width() + 0.5, bar.get_y() + bar.get_height()/2, f'{val:.1f}%', va='center', fontsize=8)
         
-        # Gráfico 4: Distribuição do faturamento (pizza)
+        # Gráfico 4
         ax4 = fig.add_subplot(gs[1, 1])
         top5_fat = df_servicos.nlargest(5, 'faturamento')
         outros = df_servicos['faturamento'].sum() - top5_fat['faturamento'].sum()
-        
         labels = list(top5_fat.index) + ['Outros']
         sizes = list(top5_fat['faturamento']) + [outros]
-        cores_pizza = [CORES['turquesa'], CORES['rosa'], CORES['verde'], 
-                       CORES['amarelo'], CORES['turquesa_escuro'], CORES['cinza']]
-        
-        wedges, texts, autotexts = ax4.pie(sizes, labels=None, autopct='%1.1f%%', 
-                                            colors=cores_pizza, startangle=90)
-        ax4.set_title('📊 Distribuição do Faturamento', fontweight='bold', pad=10)
-        ax4.legend(wedges, [f'{l[:15]}...' if len(l) > 15 else l for l in labels], 
-                   loc='center left', bbox_to_anchor=(1, 0.5), fontsize=7)
-        
+        cores_pizza = [CORES['turquesa'], CORES['rosa'], CORES['verde'], CORES['amarelo'], CORES['turquesa_escuro'], CORES['cinza']]
+        wedges, texts, autotexts = ax4.pie(sizes, labels=None, autopct='%1.1f%%', colors=cores_pizza, startangle=90, pctdistance=0.85)
+        centre_circle = plt.Circle((0,0),0.70,fc='white')
+        ax4.add_artist(centre_circle)
+        ax4.set_title('Share de Receita', fontweight='bold', pad=10, loc='left')
+        ax4.legend(wedges, [f'{l[:15]}...' if len(l) > 15 else l for l in labels], loc='center left', bbox_to_anchor=(1, 0.5), fontsize=7)
         plt.setp(autotexts, size=8, weight='bold')
         
-        pdf.savefig(fig, bbox_inches='tight')
+        pdf.savefig(fig)
         plt.close(fig)
     
     def gerar_pagina_temporal(self, pdf):
-        """Gera a página de análise temporal"""
-        
-        fig = plt.figure(figsize=(11.69, 8.27))
+        """Gera a página temporal - ESTILO CLEAN"""
+        fig = plt.figure(figsize=A4_SIZE)
         fig.suptitle('Análise Temporal', fontsize=20, fontweight='bold', 
-                     color=CORES['cinza_escuro'], y=0.98)
+                     color=CORES['cinza_escuro'], x=0.05, ha='left', y=0.95)
         
-        gs = fig.add_gridspec(2, 2, hspace=0.35, wspace=0.25, 
-                              left=0.08, right=0.95, top=0.88, bottom=0.08)
+        gs = fig.add_gridspec(2, 2, hspace=0.4, wspace=0.3, 
+                              left=0.08, right=0.95, top=0.85, bottom=0.08)
         
-        # Gráfico 1: Agendamentos por dia da semana
+        # Gráfico 1
         ax1 = fig.add_subplot(gs[0, 0])
+        limpar_estilo_grafico(ax1)
         dias_nomes = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
         df_dias = self.kpis['por_dia_semana'].reindex(range(6), fill_value=0)
-        
         x = range(len(dias_nomes))
         width = 0.35
-        
-        bars1 = ax1.bar([i - width/2 for i in x], df_dias['total'] - df_dias['cancelados'], 
-                        width, label='Realizados', color=CORES['verde'])
-        bars2 = ax1.bar([i + width/2 for i in x], df_dias['cancelados'], 
-                        width, label='Cancelados', color=CORES['vermelho'])
-        
+        ax1.bar([i - width/2 for i in x], df_dias['total'] - df_dias['cancelados'], width, label='Realizados', color=CORES['verde'], alpha=0.8)
+        ax1.bar([i + width/2 for i in x], df_dias['cancelados'], width, label='Cancelados', color=CORES['vermelho'], alpha=0.8)
         ax1.set_xticks(x)
         ax1.set_xticklabels(dias_nomes)
-        ax1.set_ylabel('Quantidade')
-        ax1.set_title('📅 Agendamentos por Dia da Semana', fontweight='bold', pad=10)
-        ax1.legend(loc='upper right', fontsize=8)
+        ax1.set_title('Volume Semanal', fontweight='bold', pad=10, loc='left')
+        ax1.legend(loc='upper right', fontsize=8, frameon=False)
         
-        # Adicionar valores
-        for bar in bars1:
-            height = bar.get_height()
-            if height > 0:
-                ax1.text(bar.get_x() + bar.get_width()/2., height, f'{int(height)}',
-                        ha='center', va='bottom', fontsize=8)
-        
-        # Gráfico 2: Taxa de cancelamento por dia
+        # Gráfico 2
         ax2 = fig.add_subplot(gs[0, 1])
+        limpar_estilo_grafico(ax2)
         taxas = df_dias['taxa_cancelamento'].values
-        cores_taxa = [CORES['verde'] if t < 15 else (CORES['amarelo'] if t < 25 else CORES['vermelho']) 
-                      for t in taxas]
-        bars3 = ax2.bar(dias_nomes, taxas, color=cores_taxa)
-        ax2.axhline(y=self.kpis['taxa_cancelamento'], color=CORES['turquesa'], 
-                    linestyle='--', label=f"Média: {self.kpis['taxa_cancelamento']:.1f}%")
-        ax2.set_ylabel('Taxa de Cancelamento (%)')
-        ax2.set_title('📉 Taxa de Cancelamento por Dia', fontweight='bold', pad=10)
-        ax2.legend(loc='upper right', fontsize=8)
+        cores_taxa = [CORES['verde'] if t < 15 else (CORES['amarelo'] if t < 25 else CORES['vermelho']) for t in taxas]
+        ax2.bar(dias_nomes, taxas, color=cores_taxa, alpha=0.8)
+        ax2.axhline(y=self.kpis['taxa_cancelamento'], color=CORES['turquesa'], linestyle='--', label=f"Média: {self.kpis['taxa_cancelamento']:.1f}%")
+        ax2.set_title('Cancelamento por Dia (%)', fontweight='bold', pad=10, loc='left')
+        ax2.legend(loc='upper right', fontsize=8, frameon=False)
         
-        for bar, val in zip(bars3, taxas):
-            ax2.text(bar.get_x() + bar.get_width()/2., bar.get_height() + 0.5, 
-                    f'{val:.1f}%', ha='center', va='bottom', fontsize=8)
-        
-        # Gráfico 3: Faturamento por semana
+        # Gráfico 3
         ax3 = fig.add_subplot(gs[1, 0])
+        limpar_estilo_grafico(ax3)
         df_semana = self.kpis['por_semana']
         semanas = [f'Semana {i+1}' for i in range(len(df_semana))]
-        
-        ax3.fill_between(semanas, df_semana['faturamento'], alpha=0.3, color=CORES['turquesa'])
-        ax3.plot(semanas, df_semana['faturamento'], 'o-', color=CORES['turquesa'], 
-                linewidth=2, markersize=8)
-        
+        ax3.fill_between(semanas, df_semana['faturamento'], alpha=0.2, color=CORES['turquesa'])
+        ax3.plot(semanas, df_semana['faturamento'], 'o-', color=CORES['turquesa'], linewidth=2, markersize=8)
         for i, (s, v) in enumerate(zip(semanas, df_semana['faturamento'])):
-            ax3.annotate(formatar_moeda(v), (i, v), textcoords="offset points", 
-                        xytext=(0, 10), ha='center', fontsize=8)
+            ax3.annotate(formatar_moeda(v), (i, v), textcoords="offset points", xytext=(0, 10), ha='center', fontsize=8)
+        ax3.set_title('Evolução do Faturamento', fontweight='bold', pad=10, loc='left')
         
-        ax3.set_ylabel('Faturamento (R$)')
-        ax3.set_title('📈 Evolução Semanal do Faturamento', fontweight='bold', pad=10)
-        
-        # Gráfico 4: Horários mais movimentados
+        # Gráfico 4
         ax4 = fig.add_subplot(gs[1, 1])
+        limpar_estilo_grafico(ax4)
         horas = self.kpis['por_hora']
         horas_labels = [f'{h}h' for h in horas.index]
-        
-        cores_horas = [CORES['turquesa'] if v < horas.median() else CORES['rosa'] 
-                       for v in horas.values]
-        bars4 = ax4.bar(horas_labels, horas.values, color=cores_horas)
-        ax4.set_xlabel('Horário')
-        ax4.set_ylabel('Quantidade de Agendamentos')
-        ax4.set_title('🕐 Horários Mais Movimentados', fontweight='bold', pad=10)
+        cores_horas = [CORES['turquesa'] if v < horas.median() else CORES['rosa'] for v in horas.values]
+        ax4.bar(horas_labels, horas.values, color=cores_horas, alpha=0.8)
+        ax4.set_title('Horários de Pico', fontweight='bold', pad=10, loc='left')
         ax4.tick_params(axis='x', rotation=45)
         
-        # Destacar horário de pico
-        pico_idx = horas.values.argmax()
-        bars4[pico_idx].set_color(CORES['rosa_escuro'])
-        ax4.annotate('PICO', (pico_idx, horas.values[pico_idx]), 
-                    textcoords="offset points", xytext=(0, 5), 
-                    ha='center', fontsize=8, fontweight='bold', color=CORES['rosa_escuro'])
-        
-        pdf.savefig(fig, bbox_inches='tight')
+        pdf.savefig(fig)
         plt.close(fig)
     
     def gerar_pagina_insights(self, pdf):
-        """Gera a página de insights e recomendações"""
+        """Gera a página de insights - DESIGN CLEAN + TEXTO ORIGINAL"""
         
-        fig = plt.figure(figsize=(11.69, 8.27))
+        fig = plt.figure(figsize=A4_SIZE)
         ax = fig.add_axes([0, 0, 1, 1])
-        ax.set_xlim(0, 1)
-        ax.set_ylim(0, 1)
         ax.axis('off')
         
         # Título
-        ax.text(0.5, 0.95, '💡 Insights e Recomendações', 
-                ha='center', va='center', fontsize=24, fontweight='bold', 
+        ax.text(0.1, 0.90, 'Insights e Recomendações', 
+                ha='left', va='center', fontsize=24, fontweight='bold', 
                 color=CORES['cinza_escuro'])
         
-        # Analisar dados para gerar insights
+        # --- LÓGICA ORIGINAL RESTAURADA ---
         df_dias = self.kpis['por_dia_semana']
         melhor_dia = df_dias['taxa_cancelamento'].idxmin()
         pior_dia = df_dias['taxa_cancelamento'].idxmax()
         
         df_servicos = self.kpis['por_servico']
         servico_mais_cancel = df_servicos['taxa_cancelamento'].idxmax()
-        servico_menos_cancel = df_servicos['taxa_cancelamento'].idxmin()
+        servico_menos_cancel = df_servicos['taxa_cancelamento'].idxmin() # Restaurado
         servico_mais_fat = df_servicos['faturamento'].idxmax()
         
+        # Lista com os 6 itens originais
         insights = [
             {
                 'icone': '📅',
@@ -866,7 +753,7 @@ class RelatorioBIBeiraMar:
                         f'({df_servicos.loc[servico_mais_cancel, "taxa_cancelamento"]:.1f}%). '
                         f'Avalie política de confirmação específica.'
             },
-            {
+            {   # ITEM RESTAURADO
                 'icone': '✅',
                 'titulo': 'Destaque Positivo',
                 'texto': f'{servico_menos_cancel} tem a menor taxa de cancelamento '
@@ -881,94 +768,70 @@ class RelatorioBIBeiraMar:
             },
         ]
         
-        y_pos = 0.82
+        # --- RENDERIZAÇÃO CLEAN (TEXTO + ÍCONE + LINHA) ---
+        y_pos = 0.78 # Começar um pouco mais alto para caber 6 itens
         for insight in insights:
-            # Card de insight
-            card = mpatches.FancyBboxPatch(
-                (0.05, y_pos - 0.10), 0.90, 0.12,
-                boxstyle="round,pad=0.01,rounding_size=0.02",
-                facecolor=CORES['branco'],
-                edgecolor=CORES['turquesa'],
-                linewidth=2
-            )
-            ax.add_patch(card)
-            
-            # Ícone
-            ax.text(0.08, y_pos - 0.04, insight['icone'], fontsize=20, va='center')
+            # Bullet point estilizado
+            ax.text(0.1, y_pos, insight['icone'], fontsize=16, va='center')
             
             # Título
-            ax.text(0.14, y_pos - 0.02, insight['titulo'], fontsize=11, 
+            ax.text(0.15, y_pos, insight['titulo'], fontsize=11, 
                     fontweight='bold', color=CORES['cinza_escuro'], va='center')
             
             # Texto
-            ax.text(0.14, y_pos - 0.065, insight['texto'], fontsize=9, 
+            ax.text(0.15, y_pos - 0.04, insight['texto'], fontsize=10, 
                     color=CORES['cinza'], va='center', wrap=True)
             
-            y_pos -= 0.14
+            # Linha divisória fina
+            ax.plot([0.1, 0.9], [y_pos - 0.07, y_pos - 0.07], color='#EEEEEE', lw=1)
+            
+            y_pos -= 0.11 # Espaçamento ajustado para caber 6 itens
         
         # Rodapé
-        ax.text(0.5, 0.03, 
+        ax.text(0.5, 0.05, 
                 f"Relatório de BI - {get_nome_mes(self.mes)} {self.ano} | Clínica Beira-Mar", 
                 ha='center', va='center', fontsize=9, color=CORES['cinza'])
         
-        pdf.savefig(fig, bbox_inches='tight')
+        pdf.savefig(fig)
         plt.close(fig)
     
     def gerar_pagina_comparativo(self, pdf):
-        """Gera página com análise comparativa e tendências"""
-        
-        fig = plt.figure(figsize=(11.69, 8.27))
-        fig.suptitle('Dashboard de Performance', fontsize=20, fontweight='bold', 
-                     color=CORES['cinza_escuro'], y=0.98)
+        """Gera página comparativa - ESTILO CLEAN"""
+        fig = plt.figure(figsize=A4_SIZE)
+        fig.suptitle('Dashboard de Metas', fontsize=20, fontweight='bold', 
+                     color=CORES['cinza_escuro'], x=0.05, ha='left', y=0.95)
         
         gs = fig.add_gridspec(2, 3, hspace=0.35, wspace=0.3, 
-                              left=0.08, right=0.95, top=0.88, bottom=0.08)
+                              left=0.08, right=0.95, top=0.85, bottom=0.08)
         
-        # Gauge de Taxa de Comparecimento
         ax1 = fig.add_subplot(gs[0, 0], projection='polar')
-        self._criar_gauge(ax1, self.kpis['taxa_comparecimento'], 
-                         'Taxa de Comparecimento', meta=85)
+        self._criar_gauge(ax1, self.kpis['taxa_comparecimento'], 'Taxa de Comparecimento', meta=85)
         
-        # Gauge de Ocupação (estimativa baseada em horário comercial)
         ax2 = fig.add_subplot(gs[0, 1], projection='polar')
-        ocupacao = min((self.kpis['atendimentos_por_dia'] / 8) * 100, 100)  # Assumindo 8 slots por dia
+        ocupacao = min((self.kpis['atendimentos_por_dia'] / 8) * 100, 100)
         self._criar_gauge(ax2, ocupacao, 'Taxa de Ocupação', meta=75)
         
-        # Gauge de Faturamento vs Meta
         ax3 = fig.add_subplot(gs[0, 2], projection='polar')
-        meta_faturamento = 12000  # Meta mensal estimada
+        meta_faturamento = 12000
         perc_meta = (self.kpis['faturamento'] / meta_faturamento) * 100
         self._criar_gauge(ax3, min(perc_meta, 150), 'Meta de Faturamento', meta=100)
         
-        # Gráfico de Evolução Diária
         ax4 = fig.add_subplot(gs[1, :2])
+        limpar_estilo_grafico(ax4)
         df = self.df_agendamentos.copy()
         df['data'] = df['dt_hora'].dt.date
-        
         evolucao = df[df['status'] == 'Concluido'].groupby('data')['valor_pago'].sum()
         evolucao_acum = evolucao.cumsum()
-        
-        ax4.fill_between(range(len(evolucao_acum)), evolucao_acum.values, 
-                         alpha=0.3, color=CORES['turquesa'])
-        ax4.plot(range(len(evolucao_acum)), evolucao_acum.values, 
-                'o-', color=CORES['turquesa'], linewidth=2, markersize=4)
-        
-        ax4.set_xlabel('Dias do Mês')
-        ax4.set_ylabel('Faturamento Acumulado (R$)')
-        ax4.set_title('📈 Evolução do Faturamento Acumulado', fontweight='bold', pad=10)
-        
-        # Adicionar linha de meta
+        ax4.fill_between(range(len(evolucao_acum)), evolucao_acum.values, alpha=0.2, color=CORES['turquesa'])
+        ax4.plot(range(len(evolucao_acum)), evolucao_acum.values, 'o-', color=CORES['turquesa'], linewidth=2, markersize=4)
+        ax4.set_title('Acumulado do Mês', fontweight='bold', pad=10, loc='left')
         meta_diaria = meta_faturamento / len(evolucao_acum)
         meta_acum = [meta_diaria * (i+1) for i in range(len(evolucao_acum))]
-        ax4.plot(range(len(meta_acum)), meta_acum, '--', color=CORES['rosa'], 
-                label='Meta Linear', linewidth=2)
-        ax4.legend(loc='upper left')
+        ax4.plot(range(len(meta_acum)), meta_acum, '--', color=CORES['rosa'], label='Meta Linear', linewidth=2)
+        ax4.legend(loc='upper left', frameon=False)
         
-        # Tabela resumo
         ax5 = fig.add_subplot(gs[1, 2])
         ax5.axis('off')
-        
-        # Criar tabela
         tabela_data = [
             ['Métrica', 'Valor'],
             ['Total Agendamentos', str(self.kpis['total_agendamentos'])],
@@ -978,120 +841,66 @@ class RelatorioBIBeiraMar:
             ['Ticket Médio', formatar_moeda(self.kpis['ticket_medio'])],
             ['Dias Trabalhados', str(self.kpis['dias_trabalhados'])],
         ]
-        
-        table = ax5.table(cellText=tabela_data[1:], 
-                         colLabels=tabela_data[0],
-                         loc='center',
-                         cellLoc='center',
-                         colColours=[CORES['turquesa'], CORES['turquesa']])
+        table = ax5.table(cellText=tabela_data[1:], colLabels=tabela_data[0], loc='center', cellLoc='center', colColours=[CORES['fundo_card'], CORES['fundo_card']])
         table.auto_set_font_size(False)
         table.set_fontsize(9)
         table.scale(1.2, 1.8)
+        ax5.set_title('Resumo Numérico', fontweight='bold', pad=20)
         
-        ax5.set_title('📋 Resumo do Mês', fontweight='bold', pad=20)
-        
-        pdf.savefig(fig, bbox_inches='tight')
+        pdf.savefig(fig)
         plt.close(fig)
     
     def _criar_gauge(self, ax, valor, titulo, meta=80):
-        """Cria um gráfico de gauge (velocímetro)"""
-        
-        # Limpar e configurar o eixo polar
+        """Cria um gráfico de gauge - DESIGN CLEAN"""
         ax.set_theta_zero_location('N')
         ax.set_theta_direction(-1)
         ax.set_thetamin(0)
         ax.set_thetamax(180)
-        
-        # Fundo do gauge
         theta_bg = np.linspace(0, np.pi, 100)
-        ax.fill_between(theta_bg, 0, 1, alpha=0.1, color=CORES['cinza'])
-        
-        # Zonas coloridas
-        zona_verde = np.linspace(0, np.pi * (meta/100), 50)
-        zona_amarela = np.linspace(np.pi * (meta/100), np.pi * 0.85, 30)
-        zona_vermelha = np.linspace(np.pi * 0.85, np.pi, 20)
-        
-        ax.fill_between(zona_verde, 0.7, 1, alpha=0.3, color=CORES['verde'])
-        ax.fill_between(zona_amarela, 0.7, 1, alpha=0.3, color=CORES['amarelo'])
-        ax.fill_between(zona_vermelha, 0.7, 1, alpha=0.3, color=CORES['vermelho'])
-        
-        # Ponteiro
-        angulo = np.pi * (1 - min(valor, 100) / 100)
-        ax.annotate('', xy=(angulo, 0.9), xytext=(angulo, 0),
-                   arrowprops=dict(arrowstyle='->', color=CORES['cinza_escuro'], lw=3))
-        
-        # Valor central
-        ax.text(np.pi/2, 0.3, f'{valor:.1f}%', ha='center', va='center', 
-               fontsize=14, fontweight='bold', color=CORES['cinza_escuro'])
-        
-        # Título
-        ax.text(np.pi/2, -0.2, titulo, ha='center', va='center', 
-               fontsize=10, color=CORES['cinza'], wrap=True)
-        
-        # Remover elementos do eixo
+        ax.fill_between(theta_bg, 0.6, 1, color='#F0F0F0')
+        valor_rad = np.pi * (min(valor, 100)/100)
+        zona_valor = np.linspace(0, valor_rad, 50)
+        cor_barra = CORES['turquesa']
+        if valor < meta * 0.8: cor_barra = CORES['vermelho']
+        elif valor < meta: cor_barra = CORES['amarelo']
+        else: cor_barra = CORES['verde']
+        ax.fill_between(zona_valor, 0.6, 1, color=cor_barra, alpha=0.8)
+        ax.plot([np.pi * (meta/100), np.pi * (meta/100)], [0.6, 1], color=CORES['cinza_escuro'], linewidth=2, linestyle='--')
+        ax.text(np.pi/2, 0.2, f'{valor:.1f}%', ha='center', va='center', fontsize=16, fontweight='bold', color=CORES['cinza_escuro'])
+        ax.text(np.pi/2, -0.2, titulo, ha='center', va='center', fontsize=9, color=CORES['cinza'])
         ax.set_rticks([])
         ax.set_xticks([])
         ax.spines['polar'].set_visible(False)
     
     def gerar_relatorio(self, caminho_saida=None):
-        """Gera o relatório completo em PDF"""
-        
+        """Gera o relatório completo"""
         print("\n" + "="*60)
         print("       GERAÇÃO DO RELATÓRIO DE BI - BEIRA-MAR")
         print("="*60)
-        
-        # Carregar dados
         self.carregar_dados()
-        
-        # Calcular KPIs
         self.calcular_kpis()
-        
-        # Definir caminho de saída
         if caminho_saida is None:
             nome_mes = get_nome_mes(self.mes).lower()
             caminho_saida = f"relatorio_bi_{nome_mes}_{self.ano}.pdf"
-        
         print(f"\n📄 Gerando PDF: {caminho_saida}")
-        
-        # Gerar PDF
         with PdfPages(caminho_saida) as pdf:
             print("  → Gerando capa...")
             self.gerar_pagina_capa(pdf)
-            
             print("  → Gerando página de KPIs...")
             self.gerar_pagina_kpis(pdf)
-            
             print("  → Gerando análise de serviços...")
             self.gerar_pagina_servicos(pdf)
-            
             print("  → Gerando análise temporal...")
             self.gerar_pagina_temporal(pdf)
-            
             print("  → Gerando dashboard de performance...")
             self.gerar_pagina_comparativo(pdf)
-            
             print("  → Gerando insights e recomendações...")
             self.gerar_pagina_insights(pdf)
-        
         print(f"\n✅ Relatório gerado com sucesso!")
         print(f"📍 Arquivo: {os.path.abspath(caminho_saida)}")
         print("="*60 + "\n")
-        
         return caminho_saida
 
-
-# ============================================================================
-# EXECUÇÃO PRINCIPAL
-# ============================================================================
-
 if __name__ == "__main__":
-    # Criar e gerar relatório
-    # Por padrão, usa dados mockados de novembro 2025
-    relatorio = RelatorioBIBeiraMar(ano=2025, mes=11, usar_dados_mock=False)
-    
-    # Gerar o relatório
+    relatorio = RelatorioBIBeiraMar(ano=2025, mes=11, usar_dados_mock=True)
     caminho = relatorio.gerar_relatorio()
-    
-    # Opcional: abrir o PDF automaticamente (funciona no Windows)
-    # import subprocess
-    # subprocess.Popen([caminho], shell=True)
