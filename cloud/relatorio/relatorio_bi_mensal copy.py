@@ -415,22 +415,20 @@ class RelatorioBIBeiraMar:
         ax4 = fig.add_subplot(gs[1, 1])
         top5_fat = df_servicos.nlargest(5, 'faturamento')
         outros = df_servicos['faturamento'].sum() - top5_fat['faturamento'].sum()
-        if outros < 0:
-            outros = 0
+        if outros < 0: outros = 0
         labels = list(top5_fat.index) + ['Outros']
         sizes = list(top5_fat['faturamento']) + [outros]
-
-        if sum(sizes) == 0:
-            sizes = [1]
-
+        
+        # Evitar erro se tudo for zero
+        if sum(sizes) == 0: sizes = [1]
+        
         cores_pizza = [CORES['turquesa'], CORES['rosa'], CORES['verde'], CORES['amarelo'], CORES['turquesa_escuro'], CORES['cinza']]
-        wedges, texts, autotexts = ax4.pie(sizes, labels=None, autopct='%1.1f%%', colors=cores_pizza[:len(labels)], startangle=90, pctdistance=0.85)
-        centre_circle = plt.Circle((0, 0), 0.70, fc='white')
+        wedges, texts, autotexts = ax4.pie(sizes, labels=None, autopct='%1.1f%%', colors=cores_pizza, startangle=90, pctdistance=0.85)
+        centre_circle = plt.Circle((0,0),0.70,fc='white')
         ax4.add_artist(centre_circle)
         ax4.set_title('Share de Receita', fontweight='bold', pad=10, loc='left')
-
-        ax4.legend([textwrap.fill(l, width=12) for l in labels], loc='center left', bbox_to_anchor=(1.0, 0.0, 0.5, 1), fontsize=6, frameon=False, labelspacing=1.2)
-        plt.setp(autotexts, size=6, weight='bold', color='white')
+        ax4.legend(wedges, [l[:15] + '...' for l in labels], loc='center left', bbox_to_anchor=(0.9, 0.5), fontsize=7)
+        plt.setp(autotexts, size=8, weight='bold')
         
         pdf.savefig(fig)
         plt.close(fig)
