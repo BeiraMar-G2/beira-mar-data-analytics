@@ -1,10 +1,10 @@
 #!/bin/bash
 # ============================================================
 # DEPLOY AUTOMÁTICO - BEIRA-MAR ANALYTICS DASHBOARD
-# Versão Compatível com Python 3.12 (Ubuntu 24.04)
+# Versão com Correção de Caminho Relativo (cd cloud/analise)
 # ============================================================
 
-set -e  # Para o script se houver erro
+set -e
 export DEBIAN_FRONTEND=noninteractive
 
 echo "🚀 Iniciando Deploy da Dashboard Beira-Mar Analytics..."
@@ -25,33 +25,25 @@ echo "📦 [1/6] Atualizando sistema..."
 sudo apt-get update -q
 sudo -E apt-get upgrade -y -q
 echo "✅ Sistema atualizado"
-echo ""
 
 # 2. INSTALAR DEPENDÊNCIAS DO LINUX
 echo "📚 [2/6] Instalando dependências do Linux..."
 sudo apt-get install -y python3-pip python3-venv python3-dev git build-essential tmux python3-setuptools
 echo "✅ Dependências instaladas"
-echo ""
 
 # 3. LIMPEZA E CRIAÇÃO DO VENV
 if [ -d "venv" ]; then
-    rm -rf venv
+    # Não vamos apagar se já existir para ganhar tempo, a menos que queira forçar
+    echo "✅ Ambiente virtual já existe."
+else
+    echo "🐍 [3/6] Criando ambiente virtual..."
+    python3 -m venv venv
+    echo "✅ Ambiente criado"
 fi
-echo "🐍 [3/6] Criando ambiente virtual..."
-python3 -m venv venv
-echo "✅ Ambiente criado"
-echo ""
 
-# 4. INSTALAR BIBLIOTECAS PYTHON (VERSÕES ATUALIZADAS PARA PY3.12)
-echo "📦 [4/6] Instalando bibliotecas Python..."
-
-# Atualizar pip
+# 4. INSTALAR BIBLIOTECAS PYTHON
+echo "📦 [4/6] Verificando bibliotecas Python..."
 ./venv/bin/pip install --upgrade pip setuptools wheel -q
-
-echo "   ⬇️  Baixando e instalando as libs..."
-
-# MUDANÇA IMPORTANTE: Versões compatíveis com Python 3.12
-# Usamos --only-binary para evitar compilação demorada e erros
 ./venv/bin/pip install \
     streamlit==1.32.0 \
     pandas==2.2.1 \
@@ -61,19 +53,22 @@ echo "   ⬇️  Baixando e instalando as libs..."
     wordcloud==1.9.3 \
     matplotlib==3.8.3 \
     openpyxl==3.1.2 \
-    --no-cache-dir
-
-echo "✅ Bibliotecas instaladas com sucesso!"
+    --no-cache-dir -q
+echo "✅ Bibliotecas ok"
 echo ""
 
-# 5. GERAR SCRIPTS DE CONTROLE
+# 5. GERAR SCRIPTS DE CONTROLE (AQUI ESTÁ A CORREÇÃO)
 echo "📝 [5/6] Gerando scripts de execução..."
 
-# --- START SCRIPT ---
+# --- START SCRIPT CORRIGIDO ---
 cat > start-dashboard.sh << 'EOF'
 #!/bin/bash
 SESSION_NAME="dashboard"
-SCRIPT_PATH="cloud/analise/dashboard_beira_mar.py"
+
+# Caminhos Absolutos
+BASE_DIR=$(pwd)
+SCRIPT_DIR="cloud/analise"
+SCRIPT_FILE="dashboard_beira_mar.py"
 
 if tmux has-session -t $SESSION_NAME 2>/dev/null; then
     echo "⚠️  A dashboard já está rodando."
@@ -83,9 +78,15 @@ fi
 echo "🚀 Iniciando Streamlit em background..."
 tmux new-session -d -s $SESSION_NAME
 
-# Força o source do venv e execução
-tmux send-keys -t $SESSION_NAME "source venv/bin/activate" C-m
-tmux send-keys -t $SESSION_NAME "streamlit run $SCRIPT_PATH --server.port=8501 --server.address=0.0.0.0" C-m
+# 1. Ativar o venv (usando caminho absoluto da raiz)
+tmux send-keys -t $SESSION_NAME "source $BASE_DIR/venv/bin/activate" C-m
+
+# 2. Entrar na pasta onde o arquivo .py está
+# ISSO CORRIGE O ERRO DO CAMINHO RELATIVO (../../)
+tmux send-keys -t $SESSION_NAME "cd $SCRIPT_DIR" C-m
+
+# 3. Rodar o streamlit de dentro da pasta
+tmux send-keys -t $SESSION_NAME "streamlit run $SCRIPT_FILE --server.port=8501 --server.address=0.0.0.0" C-m
 
 sleep 5
 if pgrep -f "streamlit" > /dev/null; then
@@ -111,8 +112,9 @@ chmod +x stop-dashboard.sh
 # 6. FINALIZAR
 echo ""
 echo "========================================================"
-echo "✅ DEPLOY FINALIZADO!"
+echo "✅ SCRIPT ATUALIZADO!"
 echo "========================================================"
-echo "Para iniciar, rode::"
+echo "Para aplicar a correção, pare o antigo e inicie o novo:"
+echo "👉 ./stop-dashboard.sh"
 echo "👉 ./start-dashboard.sh"
 echo "========================================================"
