@@ -14,6 +14,19 @@ Comandos
 pip install streamlit pandas numpy plotly emoji wordcloud matplotlib
 python3.12 -m streamlit run dashboard.py
 
+EC2:
+
+TROCAR SECURITY GROUP
+
+git clone https://github.com/BeiraMar-G2/beira-mar-data-analytics.git
+
+cd beira-mar-data-analytics/
+
+bash deploy_dash.sh
+
+./start-dashboard.sh
+
+
 
 Feito: 
 Analisar comentários
