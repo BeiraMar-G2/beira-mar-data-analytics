@@ -16,7 +16,15 @@ python3.12 -m streamlit run dashboard.py
 
 EC2:
 
-TROCAR SECURITY GROUP
+ SECURITY GROUP:
+ adicionar regra de entrada: 
+
+IPv4
+TCP personalizado
+TCP
+8501
+qualquer local ipv4
+
 
 git clone https://github.com/BeiraMar-G2/beira-mar-data-analytics.git
 
