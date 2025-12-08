@@ -1,7 +1,7 @@
 #!/bin/bash
 # ============================================================
 # DEPLOY AUTOMÁTICO - BEIRA-MAR ANALYTICS DASHBOARD
-# Versão com Dependências Integradas
+# Versão Compatível com Python 3.12 (Ubuntu 24.04)
 # ============================================================
 
 set -e  # Para o script se houver erro
@@ -29,39 +29,37 @@ echo ""
 
 # 2. INSTALAR DEPENDÊNCIAS DO LINUX
 echo "📚 [2/6] Instalando dependências do Linux..."
-# Adicionei python3-setuptools aqui para garantir
 sudo apt-get install -y python3-pip python3-venv python3-dev git build-essential tmux python3-setuptools
 echo "✅ Dependências instaladas"
 echo ""
 
 # 3. LIMPEZA E CRIAÇÃO DO VENV
 if [ -d "venv" ]; then
-    echo "🗑️  [3/6] Recriando ambiente virtual..."
     rm -rf venv
-else
-    echo "🐍 [3/6] Criando ambiente virtual..."
 fi
+echo "🐍 [3/6] Criando ambiente virtual..."
 python3 -m venv venv
 echo "✅ Ambiente criado"
 echo ""
 
-# 4. INSTALAR BIBLIOTECAS PYTHON (AQUI ESTAVA O ERRO)
+# 4. INSTALAR BIBLIOTECAS PYTHON (VERSÕES ATUALIZADAS PARA PY3.12)
 echo "📦 [4/6] Instalando bibliotecas Python..."
 
-# PASSO CRÍTICO: Atualizar ferramentas de build para evitar erro do NumPy
-echo "   🔧 Atualizando pip, setuptools e wheel..."
+# Atualizar pip
 ./venv/bin/pip install --upgrade pip setuptools wheel -q
 
-echo "   ⬇️  Baixando e instalando as libs (Isso pode demorar)..."
-# Usamos --no-cache-dir para evitar erro de memória na EC2
+echo "   ⬇️  Baixando e instalando as libs..."
+
+# MUDANÇA IMPORTANTE: Versões compatíveis com Python 3.12
+# Usamos --only-binary para evitar compilação demorada e erros
 ./venv/bin/pip install \
-    streamlit==1.29.0 \
-    pandas==2.1.4 \
-    numpy==1.24.3 \
-    plotly==5.18.0 \
-    emoji==2.9.0 \
+    streamlit==1.32.0 \
+    pandas==2.2.1 \
+    numpy==1.26.4 \
+    plotly==5.20.0 \
+    emoji==2.10.1 \
     wordcloud==1.9.3 \
-    matplotlib==3.8.2 \
+    matplotlib==3.8.3 \
     openpyxl==3.1.2 \
     --no-cache-dir
 
@@ -78,7 +76,7 @@ SESSION_NAME="dashboard"
 SCRIPT_PATH="cloud/analise/dashboard_beira_mar.py"
 
 if tmux has-session -t $SESSION_NAME 2>/dev/null; then
-    echo "⚠️  A dashboard já está rodando (tmux session: $SESSION_NAME)."
+    echo "⚠️  A dashboard já está rodando."
     exit 1
 fi
 
