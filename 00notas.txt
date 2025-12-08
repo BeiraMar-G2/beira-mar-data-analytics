@@ -35,6 +35,9 @@ bash deploy_dash.sh
 ./start-dashboard.sh
 
 
+Parar:
+./stop-dashboard.sh
+
 
 Feito: 
 Analisar comentários
@@ -46,10 +49,7 @@ Criação de relatorio BI com Python e conexão com banco de dados:
 
 
 Próximos passos:
-1 - Atualizar rodape
-2 Alterar grafico de sms para barras 
-3 Mexer nas recomendações e insights
-4 Rodar Streamlit na EC2
+Conferir se titulo e arrumar emoji
 
 Relatorio: 
 5 Arrumar velocimetros
